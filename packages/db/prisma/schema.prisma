@@ -1,0 +1,189 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum NoticeSource {
+  NOTICE
+  UPDATE
+}
+
+enum EventRoleType {
+  TANK
+  HEAL
+  DPS
+}
+
+enum EventSignupStatus {
+  CONFIRMED
+  WAITLIST
+  CANCELED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  LATE
+  NOSHOW
+}
+
+model User {
+  id        String   @id @default(cuid())
+  discordId String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  characters Character[]
+
+  legionMemberships LegionMember[]
+  eventSignups      EventSignup[]
+  attendance        Attendance[]
+}
+
+model Character {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  server    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])
+}
+
+model NoticeItem {
+  id          String      @id @default(cuid())
+  source      NoticeSource
+  externalId  String
+  url         String
+  title       String
+  publishedAt DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  snapshots NoticeSnapshot[]
+  diffs     NoticeDiff[]
+
+  @@unique([source, externalId])
+  @@index([source, publishedAt])
+}
+
+model NoticeSnapshot {
+  id             String   @id @default(cuid())
+  noticeItemId   String
+  fetchedAt      DateTime @default(now())
+  contentHash    String
+  normalizedText String
+
+  noticeItem NoticeItem @relation(fields: [noticeItemId], references: [id], onDelete: Cascade)
+
+  diffsFrom NoticeDiff[] @relation("NoticeDiffFromSnapshot")
+  diffsTo   NoticeDiff[] @relation("NoticeDiffToSnapshot")
+
+  @@index([noticeItemId, fetchedAt])
+  @@unique([noticeItemId, contentHash])
+}
+
+model NoticeDiff {
+  id             String   @id @default(cuid())
+  noticeItemId   String
+  fromSnapshotId String
+  toSnapshotId   String
+  diffJson       Json
+  createdAt      DateTime @default(now())
+
+  noticeItem NoticeItem @relation(fields: [noticeItemId], references: [id], onDelete: Cascade)
+
+  fromSnapshot NoticeSnapshot @relation("NoticeDiffFromSnapshot", fields: [fromSnapshotId], references: [id], onDelete: Cascade)
+  toSnapshot   NoticeSnapshot @relation("NoticeDiffToSnapshot", fields: [toSnapshotId], references: [id], onDelete: Cascade)
+
+  @@unique([fromSnapshotId, toSnapshotId])
+}
+
+model Legion {
+  id             String   @id @default(cuid())
+  name           String
+  server         String?
+  faction        String?
+  discordGuildId String?  @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  members LegionMember[]
+  events  Event[]
+}
+
+model LegionMember {
+  id        String   @id @default(cuid())
+  legionId  String
+  userId    String
+  role      String?
+  createdAt DateTime @default(now())
+
+  legion Legion @relation(fields: [legionId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([legionId, userId])
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  legionId    String
+  title       String
+  kind        String?
+  startAt     DateTime
+  durationMin Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  legion Legion @relation(fields: [legionId], references: [id], onDelete: Cascade)
+
+  roles      EventRole[]
+  signups    EventSignup[]
+  attendance Attendance[]
+}
+
+model EventRole {
+  id       String        @id @default(cuid())
+  eventId  String
+  roleType EventRoleType
+  slots    Int
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, roleType])
+}
+
+model EventSignup {
+  id        String          @id @default(cuid())
+  eventId   String
+  userId    String
+  roleType  EventRoleType
+  status    EventSignupStatus
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+}
+
+model Attendance {
+  id        String           @id @default(cuid())
+  eventId   String
+  userId    String
+  status    AttendanceStatus
+  checkedAt DateTime?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+}

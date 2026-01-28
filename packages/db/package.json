@@ -10,13 +10,26 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist", "prisma"],
+  "files": [
+    "dist",
+    "prisma"
+  ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "node scripts/prisma.mjs generate && tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "prisma:validate": "node scripts/prisma.mjs validate",
+    "prisma:generate": "node scripts/prisma.mjs generate",
+    "prisma:migrate": "node scripts/prisma.mjs migrate dev",
+    "prisma:studio": "node scripts/prisma.mjs studio"
   },
-  "dependencies": {},
-  "devDependencies": {}
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.3.0",
+    "@prisma/client": "^7.3.0"
+  },
+  "devDependencies": {
+    "dotenv": "^17.2.3",
+    "prisma": "^7.3.0"
+  }
 }
