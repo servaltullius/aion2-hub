@@ -6,8 +6,15 @@ export const manifest: HubModule = {
   description: "Official links hub",
   version: "0.0.0",
   permission: "public",
-  nav: [],
-  pages: [],
+  nav: [{ title: "Links", href: "/m/links/official" }],
+  pages: [
+    {
+      id: "official",
+      title: "Official Links",
+      href: "/m/links/official",
+      load: () => import("./pages/official.js")
+    }
+  ],
   widgets: []
 };
 

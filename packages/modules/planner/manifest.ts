@@ -6,8 +6,21 @@ export const manifest: HubModule = {
   description: "Local-first checklist planner",
   version: "0.0.0",
   permission: "public",
-  nav: [],
-  pages: [],
-  widgets: []
+  nav: [{ title: "Planner", href: "/m/planner/today" }],
+  pages: [
+    {
+      id: "today",
+      title: "Today",
+      href: "/m/planner/today",
+      load: () => import("./pages/today.js")
+    }
+  ],
+  widgets: [
+    {
+      id: "today",
+      title: "오늘 숙제",
+      load: () => import("./widgets/today.js")
+    }
+  ]
 };
 

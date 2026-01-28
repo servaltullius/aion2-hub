@@ -127,24 +127,64 @@ importers:
       '@aion2/core':
         specifier: workspace:*
         version: link:../../core
+      react:
+        specifier: ^19.0.0
+        version: 19.2.4
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.4(react@19.2.4)
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.10
 
   packages/modules/links:
     dependencies:
       '@aion2/core':
         specifier: workspace:*
         version: link:../../core
+      react:
+        specifier: ^19.0.0
+        version: 19.2.4
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.4(react@19.2.4)
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.10
 
   packages/modules/notices:
     dependencies:
       '@aion2/core':
         specifier: workspace:*
         version: link:../../core
+      react:
+        specifier: ^19.0.0
+        version: 19.2.4
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.4(react@19.2.4)
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.10
 
   packages/modules/planner:
     dependencies:
       '@aion2/core':
         specifier: workspace:*
         version: link:../../core
+      react:
+        specifier: ^19.0.0
+        version: 19.2.4
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.4(react@19.2.4)
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.10
 
 packages:
 
