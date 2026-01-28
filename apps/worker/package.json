@@ -1,0 +1,15 @@
+{
+  "name": "worker",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "dev": "node dist/index.js",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

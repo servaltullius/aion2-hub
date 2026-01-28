@@ -1,0 +1,23 @@
+{
+  "name": "@aion2/module-legion",
+  "private": true,
+  "type": "module",
+  "main": "./dist/manifest.js",
+  "types": "./dist/manifest.d.ts",
+  "exports": {
+    "./manifest": {
+      "types": "./dist/manifest.d.ts",
+      "default": "./dist/manifest.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@aion2/core": "workspace:*"
+  }
+}
