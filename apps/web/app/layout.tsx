@@ -10,6 +10,10 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko">
+      <head>
+        <link rel="manifest" href="/manifest.webmanifest" />
+        <meta name="theme-color" content="#4f46e5" />
+      </head>
       <body>
         <AppShell>{children}</AppShell>
       </body>
