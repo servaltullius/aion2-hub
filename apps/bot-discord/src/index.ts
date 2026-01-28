@@ -10,7 +10,6 @@ if (!token) throw new Error("Missing DISCORD_BOT_TOKEN");
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 client.once(Events.ClientReady, (readyClient) => {
-  // eslint-disable-next-line no-console
   console.log(`Discord bot ready: ${readyClient.user.tag}`);
 });
 
@@ -23,4 +22,3 @@ client.on(Events.InteractionCreate, async (interaction) => {
 });
 
 await client.login(token);
-

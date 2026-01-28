@@ -9,7 +9,7 @@ module.exports = [
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ["**/*.{js,jsx,ts,tsx}"],
+    files: ["**/*.{js,jsx,ts,tsx,mjs,cjs}"],
     languageOptions: {
       globals: {
         ...globals.node,
@@ -18,4 +18,3 @@ module.exports = [
     }
   }
 ];
-

@@ -15,11 +15,8 @@ if (!guildId) throw new Error("Missing DISCORD_GUILD_ID");
 const rest = new REST({ version: "10" }).setToken(token);
 const commands = [pingCommand.toJSON()];
 
-// eslint-disable-next-line no-console
 console.log(`Deploying ${commands.length} command(s) to guild ${guildId}...`);
 
 await rest.put(Routes.applicationGuildCommands(clientId, guildId), { body: commands });
 
-// eslint-disable-next-line no-console
 console.log("Commands deployed.");
-

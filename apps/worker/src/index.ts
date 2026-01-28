@@ -23,12 +23,10 @@ const worker = new Worker<DemoJobData>(
 );
 
 worker.on("ready", () => {
-  // eslint-disable-next-line no-console
   console.log(`worker ready: queue=${DEMO_QUEUE_NAME} concurrency=${workerConcurrency}`);
 });
 
 worker.on("failed", (job, err) => {
-  // eslint-disable-next-line no-console
   console.error("job failed", { jobId: job?.id, err });
 });
 
