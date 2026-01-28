@@ -100,6 +100,50 @@ body {
   padding: 20px;
 }
 
+.widgetGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.widgetCard {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 120px;
+}
+
+.widgetCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.widgetCardTitle {
+  font-weight: 700;
+}
+
+.widgetCardLink {
+  margin-left: auto;
+  font-size: 14px;
+  text-decoration: none;
+  color: #4f46e5;
+}
+
+.widgetCardBody {
+  color: #111827;
+}
+
+@media (max-width: 900px) {
+  .widgetGrid {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 900px) {
   .sidebar {
     position: fixed;
@@ -115,4 +159,3 @@ body {
     transform: translateX(0);
   }
 }
-
