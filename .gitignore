@@ -4,6 +4,7 @@ node_modules
 dist
 coverage
 release/
+.worktrees/
 
 # local scratch / build experiments
 tmp/
