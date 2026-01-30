@@ -10,7 +10,7 @@
     "dev": "electron-vite dev",
     "start": "electron-vite preview",
     "build": "electron-vite build",
-    "package:portable": "node scripts/patch-portable-nsi.mjs && electron-builder --win portable",
+    "package:portable": "pnpm run build && node scripts/patch-portable-nsi.mjs && electron-builder --win portable",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
     "test": "vitest run --passWithNoTests"
@@ -65,6 +65,7 @@
       "target": [
         "portable"
       ],
+      "signAndEditExecutable": false,
       "artifactName": "AION2-HUB-${version}.exe"
     }
   }
