@@ -36,7 +36,7 @@ export function EditTemplateCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Edit</CardTitle>
+        <CardTitle>수정</CardTitle>
         <CardDescription>템플릿 정보를 수정합니다.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -77,10 +77,10 @@ export function EditTemplateCard({
 
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" onClick={onSave}>
-            Save
+            저장
           </Button>
           <Button variant="outline" onClick={onCancel}>
-            Cancel
+            취소
           </Button>
         </div>
       </CardContent>

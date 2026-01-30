@@ -224,7 +224,7 @@ export function PlannerTemplatesPage() {
             → Today
           </a>
           <Button variant="outline" size="sm" disabled={loading} onClick={() => void refresh()}>
-            Reload
+            새로고침
           </Button>
         </div>
       </div>
@@ -334,7 +334,7 @@ export function PlannerTemplatesPage() {
                 await refresh();
               }}
             >
-              Add
+              추가
             </Button>
           </div>
         </CardContent>
