@@ -108,6 +108,71 @@
     "mode": "dotnet",
     "entry": null
   },
+  "architecture": {
+    "js_aliases": {
+      "@aion2/core": "packages/core/src",
+      "@aion2/db": "packages/db/src",
+      "@aion2/module-links": "packages/modules/links",
+      "@aion2/module-notices": "packages/modules/notices",
+      "@aion2/module-planner": "packages/modules/planner"
+    },
+    "rules": [
+      {
+        "name": "packages-must-not-import-apps",
+        "from_globs": ["packages/**"],
+        "to_globs": ["apps/**"],
+        "reason": "Keep packages reusable. Apps depend on packages, not the other way around."
+      },
+      {
+        "name": "api-must-not-import-other-apps",
+        "from_globs": ["apps/api/**"],
+        "to_globs": ["apps/web/**", "apps/worker/**", "apps/desktop/**"],
+        "reason": "Apps should not cross-import each other; share code via packages/*."
+      },
+      {
+        "name": "web-must-not-import-other-apps",
+        "from_globs": ["apps/web/**"],
+        "to_globs": ["apps/api/**", "apps/worker/**", "apps/desktop/**"],
+        "reason": "Apps should not cross-import each other; share code via packages/*."
+      },
+      {
+        "name": "worker-must-not-import-other-apps",
+        "from_globs": ["apps/worker/**"],
+        "to_globs": ["apps/api/**", "apps/web/**", "apps/desktop/**"],
+        "reason": "Apps should not cross-import each other; share code via packages/*."
+      },
+      {
+        "name": "desktop-must-not-import-other-apps",
+        "from_globs": ["apps/desktop/**"],
+        "to_globs": ["apps/api/**", "apps/web/**", "apps/worker/**"],
+        "reason": "Apps should not cross-import each other; share code via packages/*."
+      },
+      {
+        "name": "web-must-not-import-db",
+        "from_globs": ["apps/web/**"],
+        "to_globs": ["packages/db/**"],
+        "reason": "The web UI should not directly access the database layer."
+      },
+      {
+        "name": "module-links-must-not-import-other-modules",
+        "from_globs": ["packages/modules/links/**"],
+        "to_globs": ["packages/modules/notices/**", "packages/modules/planner/**"],
+        "reason": "Modules should be independent; compose at the app level (web/desktop)."
+      },
+      {
+        "name": "module-notices-must-not-import-other-modules",
+        "from_globs": ["packages/modules/notices/**"],
+        "to_globs": ["packages/modules/links/**", "packages/modules/planner/**"],
+        "reason": "Modules should be independent; compose at the app level (web/desktop)."
+      },
+      {
+        "name": "module-planner-must-not-import-other-modules",
+        "from_globs": ["packages/modules/planner/**"],
+        "to_globs": ["packages/modules/links/**", "packages/modules/notices/**"],
+        "reason": "Modules should be independent; compose at the app level (web/desktop)."
+      }
+    ]
+  },
   "checks": {
     "doctor": [],
     "precommit": []
