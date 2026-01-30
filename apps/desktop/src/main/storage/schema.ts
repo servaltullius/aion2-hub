@@ -155,43 +155,118 @@ CREATE TABLE IF NOT EXISTS planner_duration (
 CREATE INDEX IF NOT EXISTS idx_planner_duration_character_started
   ON planner_duration (character_id, started_at);
 
-CREATE TABLE IF NOT EXISTS collectible_item (
+-- Economy (manual prices + alerts)
+CREATE TABLE IF NOT EXISTS economy_item (
   id TEXT PRIMARY KEY,
-  kind TEXT NOT NULL CHECK(kind IN ('TRACE','CUBE','MATERIAL')),
-  map TEXT NOT NULL,
-  faction TEXT,
-  region TEXT,
   name TEXT NOT NULL,
+  category TEXT,
   note TEXT,
-  x REAL,
-  y REAL,
-  source TEXT,
   created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_collectible_item_kind_map
-  ON collectible_item (kind, map);
-
-CREATE INDEX IF NOT EXISTS idx_collectible_item_kind_region
-  ON collectible_item (kind, region);
-
-CREATE TABLE IF NOT EXISTS collectible_progress (
-  id TEXT PRIMARY KEY,
-  scope TEXT NOT NULL CHECK(scope IN ('ACCOUNT','CHARACTER')),
-  character_id TEXT,
-  item_id TEXT NOT NULL,
-  done INTEGER NOT NULL DEFAULT 1 CHECK(done IN (0,1)),
-  done_at TEXT,
   updated_at TEXT NOT NULL,
-  CHECK((scope = 'ACCOUNT' AND character_id IS NULL) OR (scope = 'CHARACTER' AND character_id IS NOT NULL)),
-  FOREIGN KEY (character_id) REFERENCES app_character(id) ON DELETE CASCADE,
-  FOREIGN KEY (item_id) REFERENCES collectible_item(id) ON DELETE CASCADE
+  UNIQUE(name)
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_collectible_progress_unique
-  ON collectible_progress (scope, item_id, IFNULL(character_id, ''));
+CREATE INDEX IF NOT EXISTS idx_economy_item_name
+  ON economy_item (name);
 
-CREATE INDEX IF NOT EXISTS idx_collectible_progress_scope_character
-  ON collectible_progress (scope, character_id);
+CREATE TABLE IF NOT EXISTS economy_price (
+  id TEXT PRIMARY KEY,
+  server TEXT NOT NULL,
+  item_id TEXT NOT NULL,
+  price INTEGER NOT NULL,
+  recorded_at TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (item_id) REFERENCES economy_item(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_economy_price_lookup
+  ON economy_price (server, item_id, recorded_at);
+
+CREATE TABLE IF NOT EXISTS economy_price_watch (
+  id TEXT PRIMARY KEY,
+  server TEXT NOT NULL,
+  item_id TEXT NOT NULL,
+  op TEXT NOT NULL CHECK(op IN ('<','<=','>','>=')),
+  threshold INTEGER NOT NULL,
+  active INTEGER NOT NULL DEFAULT 1 CHECK(active IN (0,1)),
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (item_id) REFERENCES economy_item(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_economy_watch_lookup
+  ON economy_price_watch (server, item_id, active);
+
+CREATE TABLE IF NOT EXISTS economy_alert_event (
+  id TEXT PRIMARY KEY,
+  server TEXT NOT NULL,
+  item_id TEXT NOT NULL,
+  item_name TEXT NOT NULL,
+  op TEXT NOT NULL CHECK(op IN ('<','<=','>','>=')),
+  threshold INTEGER NOT NULL,
+  price INTEGER NOT NULL,
+  triggered_at TEXT NOT NULL,
+  read_at TEXT,
+  FOREIGN KEY (item_id) REFERENCES economy_item(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_economy_alert_unread
+  ON economy_alert_event (read_at, triggered_at);
+
+-- Loot logbook (manual runs + drops)
+CREATE TABLE IF NOT EXISTS loot_run (
+  id TEXT PRIMARY KEY,
+  character_id TEXT NOT NULL,
+  server TEXT,
+  content TEXT NOT NULL,
+  role TEXT,
+  power_bracket TEXT,
+  started_at TEXT,
+  ended_at TEXT,
+  seconds INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (character_id) REFERENCES app_character(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_loot_run_character_ended
+  ON loot_run (character_id, ended_at);
+
+CREATE TABLE IF NOT EXISTS loot_run_drop (
+  id TEXT PRIMARY KEY,
+  run_id TEXT NOT NULL,
+  item_id TEXT,
+  item_name TEXT NOT NULL,
+  qty INTEGER NOT NULL,
+  note TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (run_id) REFERENCES loot_run(id) ON DELETE CASCADE,
+  FOREIGN KEY (item_id) REFERENCES economy_item(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_loot_drop_run
+  ON loot_run_drop (run_id);
+
+CREATE INDEX IF NOT EXISTS idx_loot_drop_item
+  ON loot_run_drop (item_id);
+
+CREATE TABLE IF NOT EXISTS loot_run_cost (
+  id TEXT PRIMARY KEY,
+  run_id TEXT NOT NULL,
+  kind TEXT NOT NULL CHECK(kind IN ('KINAH','ITEM')),
+  item_id TEXT,
+  item_name TEXT,
+  qty INTEGER NOT NULL DEFAULT 0,
+  kinah INTEGER NOT NULL DEFAULT 0,
+  note TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (run_id) REFERENCES loot_run(id) ON DELETE CASCADE,
+  FOREIGN KEY (item_id) REFERENCES economy_item(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_loot_cost_run
+  ON loot_run_cost (run_id);
 `;

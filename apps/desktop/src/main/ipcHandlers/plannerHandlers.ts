@@ -99,10 +99,13 @@ export function registerPlannerHandlers(deps: IpcDeps) {
     const nowIso = typeof obj.nowIso === "string" ? obj.nowIso : undefined;
     try {
       return db.getPlannerOverview(characterId, nowIso);
-    } catch {
-      db.setActiveCharacterId(null);
-      await db.persist();
-      return null;
+    } catch (e: unknown) {
+      if (e instanceof Error && e.message === "character_not_found") {
+        db.setActiveCharacterId(null);
+        await db.persist();
+        return null;
+      }
+      throw e;
     }
   });
 

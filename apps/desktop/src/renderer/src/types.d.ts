@@ -48,17 +48,29 @@ declare global {
         exportJson: (input: unknown) => Promise<unknown>;
         importJson: (input: unknown) => Promise<unknown>;
       };
-      collectibles: {
-        list: (input: unknown) => Promise<unknown>;
-        listMaps: () => Promise<unknown>;
-        exportItemsJson: () => Promise<unknown>;
-        importItemsJson: () => Promise<unknown>;
-        syncAion2Im: () => Promise<unknown>;
-        toggleDone: (input: unknown) => Promise<unknown>;
-      };
       backup: {
         exportJson: () => Promise<unknown>;
         importJson: () => Promise<unknown>;
+      };
+      economy: {
+        listItems: (input: unknown) => Promise<unknown>;
+        updateItem: (input: unknown) => Promise<unknown>;
+        deleteItem: (input: unknown) => Promise<unknown>;
+        addPrice: (input: unknown) => Promise<unknown>;
+        listPrices: (input: unknown) => Promise<unknown>;
+        listWatches: (input: unknown) => Promise<unknown>;
+        createWatch: (input: unknown) => Promise<unknown>;
+        setWatchActive: (input: unknown) => Promise<unknown>;
+        deleteWatch: (input: unknown) => Promise<unknown>;
+        listAlerts: (input: unknown) => Promise<unknown>;
+        markAlertRead: (input: unknown) => Promise<unknown>;
+      };
+      loot: {
+        listRuns: (input: unknown) => Promise<unknown>;
+        getRun: (input: unknown) => Promise<unknown>;
+        createRun: (input: unknown) => Promise<unknown>;
+        deleteRun: (input: unknown) => Promise<unknown>;
+        weeklyReport: (input: unknown) => Promise<unknown>;
       };
       notices: {
         list: (input: unknown) => Promise<unknown>;
