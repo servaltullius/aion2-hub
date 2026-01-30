@@ -52,51 +52,63 @@ export function UserPresetsCard({
         </div>
         <CardDescription>현재 “항목(가중치)” 설정을 이름으로 저장해두고, 필요할 때 불러올 수 있습니다.</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-5">
         {presetsError ? <p className="text-sm text-destructive">{presetsError}</p> : null}
         {presetsLoading ? <p className="text-sm text-muted-foreground">Loading presets…</p> : null}
 
-        <div className="grid gap-3 md:grid-cols-3">
-          <div className="space-y-2 md:col-span-2">
-            <Label>새 프리셋 이름</Label>
-            <Input value={newPresetName} onChange={(e) => setNewPresetName(e.target.value)} placeholder="예: 내 PvE 가중치" />
+        <div className="rounded-lg border bg-muted/10 p-4">
+          <div className="mb-3">
+            <div className="text-sm font-semibold">저장</div>
+            <div className="text-xs text-muted-foreground">현재 가중치(항목/가중치 ON/OFF 포함)를 이름으로 저장합니다.</div>
           </div>
-          <div className="flex items-end">
-            <Button
-              className="w-full"
-              variant="secondary"
-              disabled={saving || presetsLoading}
-              onClick={async () => {
-                if (!activeCharacterId || !state) return;
-                const name = newPresetName.trim();
-                if (!name) return;
-                setSaving(true);
-                setError(null);
-                setMessage(null);
-                try {
-                  const createdRaw = await window.aion2Hub.buildScorePresets.create({
-                    characterId: activeCharacterId,
-                    name,
-                    state
-                  });
-                  const created = asBuildScorePresetListItem(createdRaw);
-                  setMessage(created ? `프리셋을 저장했습니다. (${created.name})` : "프리셋을 저장했습니다.");
-                  await refreshPresets();
-                  if (created) setSelectedUserPresetId(created.id);
-                } catch (e: unknown) {
-                  setError(e instanceof Error ? e.message : "error");
-                } finally {
-                  setSaving(false);
-                }
-              }}
-            >
-              현재 가중치 저장
-            </Button>
+
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="space-y-2 md:col-span-2">
+              <Label>새 프리셋 이름</Label>
+              <Input value={newPresetName} onChange={(e) => setNewPresetName(e.target.value)} placeholder="예: 내 PvE 가중치" />
+            </div>
+            <div className="flex items-end">
+              <Button
+                className="w-full"
+                variant="secondary"
+                disabled={saving || presetsLoading}
+                onClick={async () => {
+                  if (!activeCharacterId || !state) return;
+                  const name = newPresetName.trim();
+                  if (!name) return;
+                  setSaving(true);
+                  setError(null);
+                  setMessage(null);
+                  try {
+                    const createdRaw = await window.aion2Hub.buildScorePresets.create({
+                      characterId: activeCharacterId,
+                      name,
+                      state
+                    });
+                    const created = asBuildScorePresetListItem(createdRaw);
+                    setMessage(created ? `프리셋을 저장했습니다. (${created.name})` : "프리셋을 저장했습니다.");
+                    await refreshPresets();
+                    if (created) setSelectedUserPresetId(created.id);
+                  } catch (e: unknown) {
+                    setError(e instanceof Error ? e.message : "error");
+                  } finally {
+                    setSaving(false);
+                  }
+                }}
+              >
+                현재 가중치 저장
+              </Button>
+            </div>
           </div>
         </div>
 
         {presets.length ? (
-          <div className="space-y-3">
+          <div className="rounded-lg border bg-background/40 p-4">
+            <div className="mb-3">
+              <div className="text-sm font-semibold">불러오기 · 관리</div>
+              <div className="text-xs text-muted-foreground">저장된 프리셋을 적용하거나, 이름/파일로 관리합니다.</div>
+            </div>
+
             <div className="grid gap-3 md:grid-cols-3">
               <div className="space-y-2 md:col-span-2">
                 <Label>저장된 프리셋</Label>
@@ -165,7 +177,7 @@ export function UserPresetsCard({
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="mt-4 flex flex-wrap gap-2 border-t pt-4">
               <Button
                 variant="outline"
                 disabled={!selectedUserPresetId}
@@ -265,6 +277,7 @@ export function UserPresetsCard({
               >
                 가져오기(JSON)
               </Button>
+              <span className="hidden flex-1 sm:block" />
               <Button
                 variant="destructive"
                 disabled={!selectedUserPresetId}
@@ -298,4 +311,3 @@ export function UserPresetsCard({
     </Card>
   );
 }
-
