@@ -36,7 +36,7 @@ export function TemplatesList({
     <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
-          <CardTitle>Templates</CardTitle>
+          <CardTitle>템플릿</CardTitle>
           <Badge variant="muted">
             {counts.total}/{templates.length}
           </Badge>
@@ -72,7 +72,7 @@ export function TemplatesList({
                 disabled={!query && typeFilter === "ALL"}
                 onClick={onClearFilters}
               >
-                Clear
+                초기화
               </Button>
             </div>
           </div>
@@ -93,10 +93,10 @@ export function TemplatesList({
 
                 <div className="ml-auto flex gap-2">
                   <Button size="sm" variant="outline" onClick={() => onEditTemplate(t)}>
-                    Edit
+                    수정
                   </Button>
                   <Button size="sm" variant="destructive" onClick={() => onDeleteTemplate(t)}>
-                    Delete
+                    삭제
                   </Button>
                 </div>
               </div>
@@ -113,4 +113,3 @@ export function TemplatesList({
     </Card>
   );
 }
-

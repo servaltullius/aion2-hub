@@ -48,7 +48,7 @@ export function ResetSettingsCard({
         </div>
         <CardDescription>서버별 설정(override)을 지원합니다. 서버 설정이 없으면 기본값을 사용합니다.</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-4">
         <div className="grid gap-3 md:grid-cols-3">
           <div className="space-y-2 md:col-span-1">
             <Label>대상 서버</Label>
@@ -70,27 +70,23 @@ export function ResetSettingsCard({
             {selectedServer ? (
               <div className="pt-1 text-xs text-muted-foreground">
                 {hasServerOverride ? (
-                  <span>
-                    <Badge variant="secondary" className="mr-2">
-                      override
-                    </Badge>
-                    이 서버는 서버별 설정을 사용 중입니다.
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="secondary">override</Badge>
+                    <span>서버별 설정을 사용 중입니다.</span>
+                  </div>
                 ) : (
-                  <span>
-                    <Badge variant="muted" className="mr-2">
-                      default
-                    </Badge>
-                    이 서버는 기본값을 사용 중입니다.
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="muted">default</Badge>
+                    <span>기본값을 사용 중입니다.</span>
+                  </div>
                 )}
               </div>
             ) : (
               <div className="pt-1 text-xs text-muted-foreground">
-                <Badge variant="secondary" className="mr-2">
-                  default
-                </Badge>
-                기본값(전체) 설정을 수정합니다.
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="secondary">default</Badge>
+                  <span>기본값(전체) 설정을 수정합니다.</span>
+                </div>
               </div>
             )}
 
@@ -119,7 +115,7 @@ export function ResetSettingsCard({
           </div>
         </div>
 
-        <div className="grid gap-2 text-sm text-muted-foreground md:grid-cols-2">
+        <div className="grid gap-2 rounded-lg border bg-muted/10 px-3 py-2 text-sm text-muted-foreground md:grid-cols-2">
           {(() => {
             const now = new Date();
             const nextDaily = nextDailyResetAt(now, dailyResetHhmm);
@@ -139,9 +135,9 @@ export function ResetSettingsCard({
           })()}
         </div>
 
-        <div className="flex gap-2">
-          <Button variant="secondary" disabled={loading || !resetValid || !resetDirty} onClick={onSave}>
-            Save
+        <div className="flex flex-wrap gap-2">
+          <Button className="min-w-28" variant="secondary" disabled={loading || !resetValid || !resetDirty} onClick={onSave}>
+            저장
           </Button>
           {hasServerOverride ? (
             <Button variant="outline" onClick={onClearServerOverride}>
@@ -153,4 +149,3 @@ export function ResetSettingsCard({
     </Card>
   );
 }
-

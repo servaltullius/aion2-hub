@@ -64,13 +64,15 @@ export function PresetCard({
           </div>
         </div>
 
-        {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
+        {message ? (
+          <div className="rounded-md border bg-muted/10 px-3 py-2 text-sm text-muted-foreground">{message}</div>
+        ) : null}
 
-        <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" disabled={applying || loading} onClick={onApplyMerge}>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <Button className="w-full" variant="secondary" disabled={applying || loading} onClick={onApplyMerge}>
             프리셋 추가(기존 유지)
           </Button>
-          <Button variant="destructive" disabled={applying || loading} onClick={onApplyReplace}>
+          <Button className="w-full" variant="destructive" disabled={applying || loading} onClick={onApplyReplace}>
             초기화 후 적용
           </Button>
         </div>
@@ -78,4 +80,3 @@ export function PresetCard({
     </Card>
   );
 }
-

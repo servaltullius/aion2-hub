@@ -27,14 +27,24 @@ export function ClassPresetCard({
         <CardTitle>직업 프리셋 (추천)</CardTitle>
         <CardDescription>가중치 “시작점”입니다. 적용 후 수정 가능하며, 저장하려면 Save를 눌러야 합니다.</CardDescription>
       </CardHeader>
-      <CardContent className="grid gap-3 md:grid-cols-3">
+      <CardContent className="grid gap-4 md:grid-cols-3">
         <div className="space-y-2">
           <Label>모드</Label>
-          <div className="flex gap-2">
-            <Button size="sm" className="flex-1" variant={presetMode === "pve" ? "secondary" : "outline"} onClick={() => onPresetModeChange("pve")}>
+          <div className="flex w-full gap-1 rounded-md border bg-muted/20 p-1">
+            <Button
+              size="sm"
+              className="flex-1"
+              variant={presetMode === "pve" ? "secondary" : "ghost"}
+              onClick={() => onPresetModeChange("pve")}
+            >
               PvE
             </Button>
-            <Button size="sm" className="flex-1" variant={presetMode === "pvp" ? "secondary" : "outline"} onClick={() => onPresetModeChange("pvp")}>
+            <Button
+              size="sm"
+              className="flex-1"
+              variant={presetMode === "pvp" ? "secondary" : "ghost"}
+              onClick={() => onPresetModeChange("pvp")}
+            >
               PvP
             </Button>
           </div>
@@ -57,9 +67,12 @@ export function ClassPresetCard({
           </Button>
         </div>
 
-        {selectedPreset ? <p className="text-sm text-muted-foreground md:col-span-3">{selectedPreset.description}</p> : null}
+        {selectedPreset ? (
+          <div className="rounded-md border bg-muted/20 px-3 py-2 text-sm text-muted-foreground md:col-span-3">
+            {selectedPreset.description}
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );
 }
-
