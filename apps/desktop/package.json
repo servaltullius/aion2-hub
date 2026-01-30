@@ -1,7 +1,7 @@
 {
   "name": "desktop",
-  "version": "0.1.35",
-  "description": "AION2 HUB Desktop (portable single EXE) — Planner + Notices + Links",
+  "version": "0.1.36",
+  "description": "AION2 HUB Desktop (portable single EXE) — Planner + Loot + Overlay",
   "author": "AION2 HUB",
   "private": true,
   "type": "module",

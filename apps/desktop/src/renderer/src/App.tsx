@@ -12,73 +12,14 @@ import { DashboardPage } from "./pages/DashboardPage.js";
 import { EconomyPage } from "./pages/EconomyPage.js";
 import { LinksOfficialPage } from "./pages/LinksOfficialPage.js";
 import { LootLogbookPage } from "./pages/LootLogbookPage.js";
+import { OverlayPage } from "./pages/OverlayPage.js";
 import { PlannerStatsPage } from "./pages/PlannerStatsPage.js";
 import { PlannerTemplatesPage } from "./pages/PlannerTemplatesPage.js";
 import { PlannerTodayPage } from "./pages/PlannerTodayPage.js";
 import { SettingsBackupPage } from "./pages/SettingsBackupPage.js";
 import { SettingsModulesPage } from "./pages/SettingsModulesPage.js";
 import { SettingsSafetyPage } from "./pages/SettingsSafetyPage.js";
-
-type Route =
-  | { name: "dashboard" }
-  | { name: "noticesFeed" }
-  | { name: "noticesDiff"; id: string }
-  | { name: "plannerToday" }
-  | { name: "plannerTemplates" }
-  | { name: "plannerStats" }
-  | { name: "buildScore" }
-  | { name: "lootLogbook" }
-  | { name: "economy" }
-  | { name: "linksOfficial" }
-  | { name: "characters" }
-  | { name: "settingsModules" }
-  | { name: "settingsBackup" }
-  | { name: "settingsSafety" };
-
-function parseRoute(hash: string): Route {
-  const trimmed = hash.startsWith("#") ? hash.slice(1) : hash;
-  const [pathPart, qs] = trimmed.split("?");
-  const path = pathPart || "/";
-
-  const params = new URLSearchParams(qs ?? "");
-
-  if (path === "/m/notices/diff") {
-    const id = params.get("id");
-    if (id) return { name: "noticesDiff", id };
-    return { name: "noticesFeed" };
-  }
-
-  switch (path) {
-    case "/":
-      return { name: "dashboard" };
-    case "/m/notices/feed":
-      return { name: "noticesFeed" };
-    case "/m/build/score":
-      return { name: "buildScore" };
-    case "/m/loot/logbook":
-      return { name: "lootLogbook" };
-    case "/m/economy":
-      return { name: "economy" };
-    case "/m/planner/today":
-      return { name: "plannerToday" };
-    case "/m/planner/templates":
-      return { name: "plannerTemplates" };
-    case "/m/planner/stats":
-      return { name: "plannerStats" };
-    case "/m/links/official":
-      return { name: "linksOfficial" };
-    case "/characters":
-      return { name: "characters" };
-    case "/settings/modules":
-      return { name: "settingsModules" };
-    case "/settings/backup":
-      return { name: "settingsBackup" };
-    case "/settings/safety":
-      return { name: "settingsSafety" };
-    default:
-      return { name: "dashboard" };
-  }
-}
+import { parseRoute, type Route } from "./router.js";
 
 type SchedulerStatus = {
   running: boolean;
@@ -126,8 +67,8 @@ function asCharacters(value: unknown): AppCharacter[] | null {
 }
 
 export function App() {
-  const api = (window as unknown as { aion2Hub?: Window["aion2Hub"] }).aion2Hub;
-  if (!api) {
+  const apiMaybe = (window as unknown as { aion2Hub?: Window["aion2Hub"] }).aion2Hub;
+  if (!apiMaybe) {
     return (
       <div className="min-h-screen bg-background p-6 text-foreground">
         <h1 className="mb-2 text-lg font-semibold tracking-tight">AION2 HUB</h1>
@@ -137,6 +78,7 @@ export function App() {
       </div>
     );
   }
+  const api = apiMaybe;
 
   const [route, setRoute] = useState<Route>(() => parseRoute(window.location.hash));
   const [status, setStatus] = useState<SchedulerStatus | null>(null);
@@ -150,6 +92,14 @@ export function App() {
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
+
+  useEffect(() => {
+    const off = api.app.onNavigate((nextHash) => {
+      const normalized = nextHash.startsWith("#") ? nextHash : `#${nextHash}`;
+      if (window.location.hash !== normalized) window.location.hash = normalized;
+    });
+    return () => off();
+  }, [api]);
 
   const refreshStatus = useMemo(
     () => async () => {
@@ -204,6 +154,22 @@ export function App() {
     );
   }
 
+  async function changeActiveCharacter(next: string | null) {
+    await api.app.setActiveCharacterId(next);
+    setActiveCharacterId(next);
+  }
+
+  if (route.name === "overlay") {
+    return (
+      <OverlayPage
+        tab={route.tab}
+        characters={characters}
+        activeCharacterId={activeCharacterId}
+        onChangeActiveCharacterId={(next) => changeActiveCharacter(next)}
+      />
+    );
+  }
+
   return (
     <div className="flex h-screen flex-col bg-background">
       <header className="sticky top-0 z-10 flex flex-wrap items-center gap-3 border-b bg-background/80 px-4 py-3 backdrop-blur">
@@ -216,8 +182,7 @@ export function App() {
             value={activeCharacterId ?? ""}
             onChange={async (e) => {
               const next = e.target.value || null;
-              await api.app.setActiveCharacterId(next);
-              setActiveCharacterId(next);
+              await changeActiveCharacter(next);
             }}
           >
             <option value="">(없음)</option>

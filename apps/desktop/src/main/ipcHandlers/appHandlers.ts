@@ -1,11 +1,21 @@
 import { ipcMain } from "electron";
 
 import type { IpcDeps } from "./types.js";
+import { asRecord } from "./util.js";
 
 export function registerAppHandlers(deps: IpcDeps) {
   ipcMain.handle("app:ping", async () => "pong");
 
   ipcMain.handle("app:getStatus", async () => deps.getScheduler()?.getStatus() ?? null);
+
+  ipcMain.handle("app:toggleOverlay", async () => deps.toggleOverlay());
+
+  ipcMain.handle("app:showMainWindow", async (_evt, input: unknown) => {
+    const obj = asRecord(input);
+    const hash = typeof obj.hash === "string" ? obj.hash.trim() : null;
+    await deps.showMainWindow(hash || null);
+    return { ok: true };
+  });
 
   ipcMain.handle("app:getActiveCharacterId", async () => {
     const db = deps.getDb();
@@ -22,4 +32,3 @@ export function registerAppHandlers(deps: IpcDeps) {
     return db.getActiveCharacterId();
   });
 }
-

@@ -6,7 +6,14 @@ contextBridge.exposeInMainWorld("aion2Hub", {
   app: {
     getActiveCharacterId: async () => ipcRenderer.invoke("app:getActiveCharacterId"),
     setActiveCharacterId: async (characterId: string | null) =>
-      ipcRenderer.invoke("app:setActiveCharacterId", characterId)
+      ipcRenderer.invoke("app:setActiveCharacterId", characterId),
+    toggleOverlay: async () => ipcRenderer.invoke("app:toggleOverlay"),
+    showMainWindow: async (input?: unknown) => ipcRenderer.invoke("app:showMainWindow", input ?? null),
+    onNavigate: (cb: (hash: string) => void) => {
+      const handler = (_event: unknown, hash: unknown) => cb(typeof hash === "string" ? hash : String(hash));
+      ipcRenderer.on("app:navigate", handler);
+      return () => ipcRenderer.removeListener("app:navigate", handler);
+    }
   },
   characters: {
     list: async () => ipcRenderer.invoke("characters:list"),
