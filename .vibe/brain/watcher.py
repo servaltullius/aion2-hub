@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
-from context_db import load_config
+from context_db import is_excluded, load_config
 
 
 IGNORE_SUFFIXES = (".swp", ".tmp", ".bak", ".pyc", "~")
@@ -49,8 +49,7 @@ def _should_track(path: Path, cfg) -> bool:
         rel = path.relative_to(cfg.root)
     except ValueError:
         return False
-    parts = {p.lower() for p in rel.parts}
-    if any(ex.lower() in parts for ex in cfg.exclude_dirs):
+    if is_excluded(rel, cfg.exclude_dirs):
         return False
     suf = path.suffix.lower()
     allowed = _allowed_suffixes(tuple(cfg.include_globs))

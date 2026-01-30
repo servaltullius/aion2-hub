@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import sqlite3
+import fnmatch
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
@@ -131,10 +132,25 @@ def sha1_text(text: str) -> str:
 
 
 def is_excluded(rel_path: Path, exclude_dirs: Iterable[str]) -> bool:
-    parts = {p.lower() for p in rel_path.parts}
+    parts = [p.lower() for p in rel_path.parts]
+
+    exact: set[str] = set()
+    patterns: list[str] = []
     for ex in exclude_dirs:
-        if ex.lower() in parts:
+        ex_s = str(ex or "").strip().strip("/").replace("\\", "/").lower()
+        if not ex_s:
+            continue
+        if any(ch in ex_s for ch in "*?["):
+            patterns.append(ex_s)
+        else:
+            exact.add(ex_s)
+
+    for part in parts:
+        if part in exact:
             return True
+        for pat in patterns:
+            if fnmatch.fnmatch(part, pat):
+                return True
     return False
 
 

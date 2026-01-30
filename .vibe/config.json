@@ -32,6 +32,9 @@
     ".nuxt",
     ".svelte-kit",
     ".turbo",
+    "release",
+    "releases",
+    "tmp*",
     ".tmp",
     "__pycache__"
   ],
