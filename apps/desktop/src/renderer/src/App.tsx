@@ -12,6 +12,7 @@ import { DashboardPage } from "./pages/DashboardPage.js";
 import { EconomyPage } from "./pages/EconomyPage.js";
 import { LinksOfficialPage } from "./pages/LinksOfficialPage.js";
 import { LootLogbookPage } from "./pages/LootLogbookPage.js";
+import { OverlayPage } from "./pages/OverlayPage.js";
 import { PlannerStatsPage } from "./pages/PlannerStatsPage.js";
 import { PlannerTemplatesPage } from "./pages/PlannerTemplatesPage.js";
 import { PlannerTodayPage } from "./pages/PlannerTodayPage.js";
@@ -144,6 +145,22 @@ export function App() {
     );
   }
 
+  async function changeActiveCharacter(next: string | null) {
+    await api.app.setActiveCharacterId(next);
+    setActiveCharacterId(next);
+  }
+
+  if (route.name === "overlay") {
+    return (
+      <OverlayPage
+        tab={route.tab}
+        characters={characters}
+        activeCharacterId={activeCharacterId}
+        onChangeActiveCharacterId={(next) => changeActiveCharacter(next)}
+      />
+    );
+  }
+
   return (
     <div className="flex h-screen flex-col bg-background">
       <header className="sticky top-0 z-10 flex flex-wrap items-center gap-3 border-b bg-background/80 px-4 py-3 backdrop-blur">
@@ -156,8 +173,7 @@ export function App() {
             value={activeCharacterId ?? ""}
             onChange={async (e) => {
               const next = e.target.value || null;
-              await api.app.setActiveCharacterId(next);
-              setActiveCharacterId(next);
+              await changeActiveCharacter(next);
             }}
           >
             <option value="">(없음)</option>
