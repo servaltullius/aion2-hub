@@ -1,6 +1,7 @@
 import { ipcMain } from "electron";
 
 import { dailyPeriodKey, weeklyPeriodKey } from "../planner/period.js";
+import type { PlannerPresetTemplateInput } from "../storage/types.js";
 
 import type { IpcDeps } from "./types.js";
 import { asRecord, resolveCharacterId } from "./util.js";
@@ -139,8 +140,8 @@ export function registerPlannerHandlers(deps: IpcDeps) {
     if (!db) throw new Error("db_not_ready");
     const obj = asRecord(input);
     const mode = obj.mode === "replace" ? "replace" : "merge";
-    const templates = Array.isArray(obj.templates) ? (obj.templates as unknown[]) : [];
-    const result = db.applyPlannerPreset({ mode, templates: templates as any });
+    const templates = Array.isArray(obj.templates) ? (obj.templates as PlannerPresetTemplateInput[]) : [];
+    const result = db.applyPlannerPreset({ mode, templates });
     await db.persist();
     return result;
   });
@@ -224,4 +225,3 @@ export function registerPlannerHandlers(deps: IpcDeps) {
     return db.getPlannerDurationStats(query);
   });
 }
-

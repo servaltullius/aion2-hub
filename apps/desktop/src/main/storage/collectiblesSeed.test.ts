@@ -24,7 +24,13 @@ async function createTestDb() {
   return wrapped;
 }
 
-function countRows(db: { db: { prepare: (sql: string) => any } }, sql: string) {
+type SqlStatement = {
+  step: () => boolean;
+  getAsObject: () => Record<string, unknown>;
+  free: () => void;
+};
+
+function countRows(db: { db: { prepare: (sql: string) => SqlStatement } }, sql: string) {
   const stmt = db.db.prepare(sql);
   try {
     if (!stmt.step()) return 0;
@@ -47,4 +53,3 @@ describe("collectibles seed", () => {
     expect(seededAgain).toBe(builtinCollectibles.length);
   });
 });
-

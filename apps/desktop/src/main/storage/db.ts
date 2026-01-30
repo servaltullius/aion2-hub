@@ -8,7 +8,7 @@ import initSqlJs, { type SqlJsStatic } from "sql.js";
 
 import { builtinCollectibles } from "../collectibles/builtin.js";
 import { SCHEMA_SQL } from "./schema.js";
-import { allRows, oneRow, type ParamsObject, type SqlJsDatabase } from "./sql.js";
+import { allRows, oneRow, type SqlJsDatabase } from "./sql.js";
 import {
   getLatestDiff as getLatestDiffDomain,
   getLatestSnapshot as getLatestSnapshotDomain,
@@ -80,13 +80,10 @@ import {
 import { exportUserBackup as exportUserBackupDomain, importUserBackup as importUserBackupDomain } from "./domains/backup.js";
 
 import type {
-  AppCharacter,
   BuildScorePreset,
   BuildScorePresetListItem,
-  BuildScoreSet,
   BuildScoreState,
   BuildScoreStat,
-  BuildScoreUnit,
   CollectibleFaction,
   CollectibleItemRow,
   CollectibleKind,
@@ -95,10 +92,7 @@ import type {
   CollectibleProgressRow,
   CollectibleScope,
   NoticeDiffBlock,
-  NoticeListItem,
   NoticeSource,
-  PlannerChargeItem,
-  PlannerChecklistItem,
   PlannerDurationRow,
   PlannerDurationStat,
   PlannerOverview,
@@ -106,7 +100,6 @@ import type {
   PlannerSettings,
   PlannerSettingsBundle,
   PlannerSettingsScope,
-  PlannerTemplate,
   PlannerTemplateType,
   UserBackup
 } from "./types.js";

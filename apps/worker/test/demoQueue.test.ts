@@ -20,8 +20,8 @@ describe("worker demo queue", () => {
 
     const queueName = `demo-test-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-    const queueConnection = new Redis(redisUrl);
-    const workerConnection = new Redis(redisUrl);
+    const queueConnection = new Redis(redisUrl, { maxRetriesPerRequest: null });
+    const workerConnection = new Redis(redisUrl, { maxRetriesPerRequest: null });
 
     const queue = new Queue(queueName, { connection: queueConnection });
     const worker = new Worker(

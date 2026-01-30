@@ -6,11 +6,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../co
 import { Input } from "../components/ui/input.js";
 import { Label } from "../components/ui/label.js";
 import { Select } from "../components/ui/select.js";
-import { isObject } from "../lib/guards.js";
 import { computeDurationSeconds, formatDurationSeconds } from "../planner/duration.js";
 import { recommendPlannerItems } from "../planner/recommend.js";
 import { formatCountdown, nextDailyResetAt, nextWeeklyResetAt } from "../planner/reset.js";
 import { startTimerWithConfirm } from "../planner/timer.js";
+
+import { PlannerChargesCard } from "./planner/today/PlannerChargesCard.js";
+import { PlannerTaskListCard } from "./planner/today/PlannerTaskListCard.js";
+import { PlannerTimerCard } from "./planner/today/PlannerTimerCard.js";
+import { asDurationStats, asOverview, formatDate, type PlannerOverview } from "./planner/today/model.js";
 
 type AppCharacter = {
   id: string;
@@ -18,162 +22,6 @@ type AppCharacter = {
   server: string | null;
   class: string | null;
 };
-
-type PlannerTemplateType = "DAILY" | "WEEKLY" | "CHARGE";
-
-type ChecklistItem = {
-  templateId: string;
-  title: string;
-  type: Exclude<PlannerTemplateType, "CHARGE">;
-  estimateMinutes: number;
-  completed: boolean;
-};
-
-type ChargeItem = {
-  templateId: string;
-  title: string;
-  type: "CHARGE";
-  rechargeHours: number;
-  maxStacks: number;
-  usedCountInWindow: number;
-  available: number;
-  nextRechargeAt: string | null;
-};
-
-type PlannerOverview = {
-  now: string;
-  periodKeys: { daily: string; weekly: string };
-  settings: { dailyResetHhmm: string; weeklyResetDay: number };
-  character: AppCharacter;
-  daily: ChecklistItem[];
-  weekly: ChecklistItem[];
-  charges: ChargeItem[];
-};
-
-type PlannerDurationStat = {
-  templateId: string;
-  count: number;
-  totalSeconds: number;
-  avgSeconds: number;
-};
-
-function asDurationStats(value: unknown): PlannerDurationStat[] | null {
-  if (!Array.isArray(value)) return null;
-  const out: PlannerDurationStat[] = [];
-  for (const v of value) {
-    if (!isObject(v)) return null;
-    if (typeof v.templateId !== "string") return null;
-    if (typeof v.count !== "number") return null;
-    if (typeof v.totalSeconds !== "number") return null;
-    if (typeof v.avgSeconds !== "number") return null;
-    out.push({
-      templateId: v.templateId,
-      count: v.count,
-      totalSeconds: v.totalSeconds,
-      avgSeconds: v.avgSeconds
-    });
-  }
-  return out;
-}
-
-function asOverview(value: unknown): PlannerOverview | null {
-  if (!isObject(value)) return null;
-  if (typeof value.now !== "string") return null;
-  if (!isObject(value.periodKeys)) return null;
-  if (typeof value.periodKeys.daily !== "string") return null;
-  if (typeof value.periodKeys.weekly !== "string") return null;
-  if (!isObject(value.settings)) return null;
-  if (typeof value.settings.dailyResetHhmm !== "string") return null;
-  if (typeof value.settings.weeklyResetDay !== "number") return null;
-  if (!isObject(value.character)) return null;
-  if (typeof value.character.id !== "string" || typeof value.character.name !== "string") return null;
-  if (!Array.isArray(value.daily) || !Array.isArray(value.weekly) || !Array.isArray(value.charges)) return null;
-
-  const parseChecklist = (raw: unknown, type: "DAILY" | "WEEKLY"): ChecklistItem | null => {
-    if (!isObject(raw)) return null;
-    if (typeof raw.templateId !== "string") return null;
-    if (typeof raw.title !== "string") return null;
-    if (raw.type !== type) return null;
-    if (typeof raw.estimateMinutes !== "number") return null;
-    if (typeof raw.completed !== "boolean") return null;
-    return {
-      templateId: raw.templateId,
-      title: raw.title,
-      type,
-      estimateMinutes: raw.estimateMinutes,
-      completed: raw.completed
-    };
-  };
-
-  const parseCharge = (raw: unknown): ChargeItem | null => {
-    if (!isObject(raw)) return null;
-    if (typeof raw.templateId !== "string") return null;
-    if (typeof raw.title !== "string") return null;
-    if (raw.type !== "CHARGE") return null;
-    if (typeof raw.rechargeHours !== "number") return null;
-    if (typeof raw.maxStacks !== "number") return null;
-    if (typeof raw.usedCountInWindow !== "number") return null;
-    if (typeof raw.available !== "number") return null;
-    if (raw.nextRechargeAt !== null && typeof raw.nextRechargeAt !== "string") return null;
-    return {
-      templateId: raw.templateId,
-      title: raw.title,
-      type: "CHARGE",
-      rechargeHours: raw.rechargeHours,
-      maxStacks: raw.maxStacks,
-      usedCountInWindow: raw.usedCountInWindow,
-      available: raw.available,
-      nextRechargeAt: raw.nextRechargeAt
-    };
-  };
-
-  const daily: ChecklistItem[] = [];
-  for (const d of value.daily) {
-    const parsed = parseChecklist(d, "DAILY");
-    if (!parsed) return null;
-    daily.push(parsed);
-  }
-  const weekly: ChecklistItem[] = [];
-  for (const w of value.weekly) {
-    const parsed = parseChecklist(w, "WEEKLY");
-    if (!parsed) return null;
-    weekly.push(parsed);
-  }
-  const charges: ChargeItem[] = [];
-  for (const c of value.charges) {
-    const parsed = parseCharge(c);
-    if (!parsed) return null;
-    charges.push(parsed);
-  }
-
-  return {
-    now: value.now,
-    periodKeys: { daily: value.periodKeys.daily, weekly: value.periodKeys.weekly },
-    settings: { dailyResetHhmm: value.settings.dailyResetHhmm, weeklyResetDay: value.settings.weeklyResetDay },
-    character: {
-      id: value.character.id,
-      name: value.character.name,
-      server: value.character.server === null || typeof value.character.server === "string" ? value.character.server : null,
-      class: value.character.class === null || typeof value.character.class === "string" ? value.character.class : null
-    },
-    daily,
-    weekly,
-    charges
-  };
-}
-
-function formatDate(value: string | null) {
-  if (!value) return "-";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return value;
-  return d.toLocaleString();
-}
-
-function estimateForBudget(item: { estimateMinutes: number }) {
-  const m = item.estimateMinutes;
-  if (!Number.isFinite(m) || m <= 0) return 5;
-  return Math.min(240, Math.max(1, Math.round(m)));
-}
 
 export function PlannerTodayPage(props: { activeCharacterId: string | null; characters: AppCharacter[] }) {
   const [overview, setOverview] = useState<PlannerOverview | null>(null);
@@ -268,7 +116,7 @@ export function PlannerTodayPage(props: { activeCharacterId: string | null; char
 
   const matchesQ = useMemo(() => {
     const q = taskQ.trim().toLowerCase();
-    if (!q) return (_title: string) => true;
+    if (!q) return (title: string) => title.length >= 0;
     return (title: string) => title.toLowerCase().includes(q);
   }, [taskQ]);
 
@@ -306,6 +154,88 @@ export function PlannerTodayPage(props: { activeCharacterId: string | null; char
     })
     .filter((v) => v !== null);
   const sum = rec.totalMinutes;
+
+  async function toggleChecklist(input: { period: "DAILY" | "WEEKLY"; templateId: string; completed: boolean }) {
+    if (!overview) return;
+    setError(null);
+    setNotice(null);
+    try {
+      const raw = await window.aion2Hub.planner.toggleComplete({
+        characterId: overview.character.id,
+        templateId: input.templateId,
+        period: input.period,
+        completed: input.completed
+      });
+      const parsed = asOverview(raw);
+      if (parsed) setOverview(parsed);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "error");
+    }
+  }
+
+  function startFromTask(input: { templateId: string; title: string }) {
+    setError(null);
+    setNotice(null);
+    requestStartTimer({ templateId: input.templateId, title: input.title });
+  }
+
+  async function stopAndSaveTimer() {
+    if (!overview || !activeTimer) return;
+    const endedAtMs = Date.now();
+    const seconds = computeDurationSeconds(activeTimer.startedAtMs, endedAtMs);
+    setError(null);
+    setNotice(null);
+    try {
+      await window.aion2Hub.planner.addDuration({
+        characterId: overview.character.id,
+        templateId: activeTimer.templateId,
+        startedAt: new Date(activeTimer.startedAtMs).toISOString(),
+        endedAt: new Date(endedAtMs).toISOString(),
+        seconds
+      });
+      setActiveTimer(null);
+      setNotice(`기록했습니다: ${formatDurationSeconds(seconds)}`);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "error");
+    }
+  }
+
+  function cancelTimer() {
+    setActiveTimer(null);
+    setNotice("타이머를 취소했습니다. (저장되지 않음)");
+  }
+
+  async function useCharge(input: { templateId: string }) {
+    if (!overview) return;
+    setError(null);
+    setNotice(null);
+    try {
+      const raw = await window.aion2Hub.planner.useCharge({
+        characterId: overview.character.id,
+        templateId: input.templateId
+      });
+      const parsed = asOverview(raw);
+      if (parsed) setOverview(parsed);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "error");
+    }
+  }
+
+  async function undoCharge(input: { templateId: string }) {
+    if (!overview) return;
+    setError(null);
+    setNotice(null);
+    try {
+      const raw = await window.aion2Hub.planner.undoCharge({
+        characterId: overview.character.id,
+        templateId: input.templateId
+      });
+      const parsed = asOverview(raw);
+      if (parsed) setOverview(parsed);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "error");
+    }
+  }
 
   return (
     <section className="space-y-4">
@@ -354,60 +284,16 @@ export function PlannerTodayPage(props: { activeCharacterId: string | null; char
       {overview ? (
         <>
           {activeTimer ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>타이머</CardTitle>
-                <CardDescription>앱을 종료하면 타이머는 리셋됩니다. (저장은 Stop 시에만)</CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-wrap items-center gap-3">
-                <div className="min-w-0">
-                  <div className="text-sm font-medium">
-                    {(overview.daily.find((d) => d.templateId === activeTimer.templateId)?.title ??
-                      overview.weekly.find((w) => w.templateId === activeTimer.templateId)?.title ??
-                      activeTimer.templateId) as string}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    elapsed: {formatDurationSeconds(Math.max(0, Math.floor((timerNowMs - activeTimer.startedAtMs) / 1000)))}
-                  </div>
-                </div>
-                <div className="ml-auto flex gap-2">
-                  <Button
-                    variant="secondary"
-                    onClick={async () => {
-                      if (!overview) return;
-                      const endedAtMs = Date.now();
-                      const seconds = computeDurationSeconds(activeTimer.startedAtMs, endedAtMs);
-                      setError(null);
-                      setNotice(null);
-                      try {
-                        await window.aion2Hub.planner.addDuration({
-                          characterId: overview.character.id,
-                          templateId: activeTimer.templateId,
-                          startedAt: new Date(activeTimer.startedAtMs).toISOString(),
-                          endedAt: new Date(endedAtMs).toISOString(),
-                          seconds
-                        });
-                        setActiveTimer(null);
-                        setNotice(`기록했습니다: ${formatDurationSeconds(seconds)}`);
-                      } catch (e: unknown) {
-                        setError(e instanceof Error ? e.message : "error");
-                      }
-                    }}
-                  >
-                    Stop & Save
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setActiveTimer(null);
-                      setNotice("타이머를 취소했습니다. (저장되지 않음)");
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <PlannerTimerCard
+              title={
+                (overview.daily.find((d) => d.templateId === activeTimer.templateId)?.title ??
+                  overview.weekly.find((w) => w.templateId === activeTimer.templateId)?.title ??
+                  activeTimer.templateId) as string
+              }
+              elapsedSeconds={Math.max(0, Math.floor((timerNowMs - activeTimer.startedAtMs) / 1000))}
+              onStopSave={() => void stopAndSaveTimer()}
+              onCancel={cancelTimer}
+            />
           ) : null}
 
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -526,191 +412,28 @@ export function PlannerTodayPage(props: { activeCharacterId: string | null; char
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <CardTitle>DAILY</CardTitle>
-                  <Badge variant="muted">
-                    {dailyDone}/{dailyAll.length}
-                  </Badge>
-                </div>
-                <CardDescription>일일 체크</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {dailyAll.length === 0 ? <p className="text-sm text-muted-foreground">템플릿이 없습니다.</p> : null}
-                {dailyVisible.map((t) => (
-                  <div key={t.templateId} className="flex items-center gap-3 rounded-md border bg-background/30 px-3 py-2 text-sm">
-                    <input
-                      className="h-4 w-4 accent-primary"
-                      type="checkbox"
-                      checked={t.completed}
-                      onChange={async (e) => {
-                        setError(null);
-                        setNotice(null);
-                        try {
-                          const raw = await window.aion2Hub.planner.toggleComplete({
-                            characterId: overview.character.id,
-                            templateId: t.templateId,
-                            period: "DAILY",
-                            completed: e.target.checked
-                          });
-                          const parsed = asOverview(raw);
-                          if (parsed) setOverview(parsed);
-                        } catch (err: unknown) {
-                          setError(err instanceof Error ? err.message : "error");
-                        }
-                      }}
-                    />
-                    <span className="flex-1">{t.title}</span>
-                    <span className="text-xs text-muted-foreground">{t.estimateMinutes}m</span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setError(null);
-                        setNotice(null);
-                        requestStartTimer({ templateId: t.templateId, title: t.title });
-                      }}
-                    >
-                      Start
-                    </Button>
-                  </div>
-                ))}
-                {dailyAll.length > 0 && dailyVisible.length === 0 ? (
-                  <div className="rounded-md border bg-background/30 px-3 py-6 text-sm text-muted-foreground">표시할 항목이 없습니다.</div>
-                ) : null}
-              </CardContent>
-            </Card>
+            <PlannerTaskListCard
+              title="DAILY"
+              description="일일 체크"
+              totalCount={dailyAll.length}
+              doneCount={dailyDone}
+              visible={dailyVisible}
+              onToggle={(input) => toggleChecklist({ period: "DAILY", ...input })}
+              onStart={startFromTask}
+            />
 
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <CardTitle>WEEKLY</CardTitle>
-                  <Badge variant="muted">
-                    {weeklyDone}/{weeklyAll.length}
-                  </Badge>
-                </div>
-                <CardDescription>주간 체크</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {weeklyAll.length === 0 ? <p className="text-sm text-muted-foreground">템플릿이 없습니다.</p> : null}
-                {weeklyVisible.map((t) => (
-                  <div key={t.templateId} className="flex items-center gap-3 rounded-md border bg-background/30 px-3 py-2 text-sm">
-                    <input
-                      className="h-4 w-4 accent-primary"
-                      type="checkbox"
-                      checked={t.completed}
-                      onChange={async (e) => {
-                        setError(null);
-                        setNotice(null);
-                        try {
-                          const raw = await window.aion2Hub.planner.toggleComplete({
-                            characterId: overview.character.id,
-                            templateId: t.templateId,
-                            period: "WEEKLY",
-                            completed: e.target.checked
-                          });
-                          const parsed = asOverview(raw);
-                          if (parsed) setOverview(parsed);
-                        } catch (err: unknown) {
-                          setError(err instanceof Error ? err.message : "error");
-                        }
-                      }}
-                    />
-                    <span className="flex-1">{t.title}</span>
-                    <span className="text-xs text-muted-foreground">{t.estimateMinutes}m</span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setError(null);
-                        setNotice(null);
-                        requestStartTimer({ templateId: t.templateId, title: t.title });
-                      }}
-                    >
-                      Start
-                    </Button>
-                  </div>
-                ))}
-                {weeklyAll.length > 0 && weeklyVisible.length === 0 ? (
-                  <div className="rounded-md border bg-background/30 px-3 py-6 text-sm text-muted-foreground">표시할 항목이 없습니다.</div>
-                ) : null}
-              </CardContent>
-            </Card>
+            <PlannerTaskListCard
+              title="WEEKLY"
+              description="주간 체크"
+              totalCount={weeklyAll.length}
+              doneCount={weeklyDone}
+              visible={weeklyVisible}
+              onToggle={(input) => toggleChecklist({ period: "WEEKLY", ...input })}
+              onStart={startFromTask}
+            />
           </div>
 
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <CardTitle>CHARGE (티켓/충전)</CardTitle>
-                <Badge variant="muted">
-                  {chargesVisible.length}/{chargesAll.length}
-                </Badge>
-              </div>
-              <CardDescription>남은 스택과 다음 충전 시간을 표시합니다.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {chargesAll.length === 0 ? <p className="text-sm text-muted-foreground">충전형 템플릿이 없습니다.</p> : null}
-              {chargesVisible.map((c) => (
-                <div key={c.templateId} className="flex flex-wrap items-center gap-2 rounded-md border bg-background/30 px-3 py-2">
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium">{c.title}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {c.available}/{c.maxStacks} · recharge {c.rechargeHours}h · next {formatDate(c.nextRechargeAt)}
-                    </div>
-                  </div>
-
-                  <div className="ml-auto flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      disabled={c.available <= 0}
-                      onClick={async () => {
-                        setError(null);
-                        setNotice(null);
-                        try {
-                          const raw = await window.aion2Hub.planner.useCharge({
-                            characterId: overview.character.id,
-                            templateId: c.templateId
-                          });
-                          const parsed = asOverview(raw);
-                          if (parsed) setOverview(parsed);
-                        } catch (err: unknown) {
-                          setError(err instanceof Error ? err.message : "error");
-                        }
-                      }}
-                    >
-                      Use 1
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={c.available >= c.maxStacks}
-                      onClick={async () => {
-                        setError(null);
-                        setNotice(null);
-                        try {
-                          const raw = await window.aion2Hub.planner.undoCharge({
-                            characterId: overview.character.id,
-                            templateId: c.templateId
-                          });
-                          const parsed = asOverview(raw);
-                          if (parsed) setOverview(parsed);
-                        } catch (err: unknown) {
-                          setError(err instanceof Error ? err.message : "error");
-                        }
-                      }}
-                    >
-                      Undo
-                    </Button>
-                  </div>
-                </div>
-              ))}
-              {chargesAll.length > 0 && chargesVisible.length === 0 ? (
-                <div className="rounded-md border bg-background/30 px-3 py-6 text-sm text-muted-foreground">표시할 항목이 없습니다.</div>
-              ) : null}
-            </CardContent>
-          </Card>
+          <PlannerChargesCard allCount={chargesAll.length} visible={chargesVisible} onUse={useCharge} onUndo={undoCharge} />
         </>
       ) : active ? (
         <Card>
