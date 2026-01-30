@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 import { Badge } from "../components/ui/badge.js";
 import { Button } from "../components/ui/button.js";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card.js";
@@ -17,6 +19,9 @@ export function OverlayPage(props: {
   activeCharacterId: string | null;
   onChangeActiveCharacterId: (id: string | null) => Promise<void> | void;
 }) {
+  const dragStyle = { WebkitAppRegion: "drag" } as unknown as CSSProperties;
+  const noDragStyle = { WebkitAppRegion: "no-drag" } as unknown as CSSProperties;
+
   const active = props.activeCharacterId
     ? props.characters.find((c) => c.id === props.activeCharacterId) ?? null
     : null;
@@ -38,7 +43,7 @@ export function OverlayPage(props: {
 
   return (
     <div className="min-h-screen bg-background p-3 text-foreground">
-      <header className="mb-3 flex items-center justify-between gap-3">
+      <header className="mb-3 flex items-center justify-between gap-3" style={dragStyle}>
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <div className="font-semibold tracking-tight">AION2 HUB</div>
@@ -48,12 +53,20 @@ export function OverlayPage(props: {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" disabled title="다음 작업에서 연결합니다.">
+          <Button
+            size="sm"
+            variant="outline"
+            style={noDragStyle}
+            onClick={async () => {
+              await window.aion2Hub.app.toggleOverlay();
+            }}
+          >
             Hide
           </Button>
           <Button
             size="sm"
             variant="outline"
+            style={noDragStyle}
             onClick={async () => {
               const hash = props.tab === "loot" ? "#/m/loot/logbook" : "#/m/planner/today";
               await window.aion2Hub.app.showMainWindow({ hash });

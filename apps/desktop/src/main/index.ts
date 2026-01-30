@@ -9,6 +9,7 @@ import { resolvePortableBaseDir, resolvePortableDataDir } from "./portableDataDi
 import { createMultiFileLogger } from "./log.js";
 import { openDesktopDb, type DesktopDb } from "./storage/db.js";
 import { startNoticesScheduler } from "./scheduler.js";
+import { createOverlayManager } from "./overlay/overlayManager.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -28,6 +29,7 @@ let logPaths: { attempted: string[]; writable: string[] } = { attempted: [], wri
 let mainWindow: BrowserWindow | null = null;
 const MAIN_WINDOW_STATE_KEY = "mainWindowState";
 let savingWindowState = false;
+let overlay: ReturnType<typeof createOverlayManager> | null = null;
 
 function resolveBaseDirEarly() {
   const portableDir = process.env.PORTABLE_EXECUTABLE_DIR?.trim();
@@ -272,6 +274,8 @@ async function createWindow(initial: WindowState) {
     void (async () => {
       try {
         await persistWindowState(win);
+        await overlay?.dispose();
+        overlay = null;
       } catch (e: unknown) {
         log.error("persistWindowState failed", { err: e instanceof Error ? e.message : String(e) });
       } finally {
@@ -453,10 +457,19 @@ async function run() {
     scheduler = startNoticesScheduler(db);
     log.info("scheduler started");
 
+    overlay = createOverlayManager({
+      getDb: () => db,
+      preloadPath: path.join(__dirname, "../preload/index.cjs"),
+      rendererIndexPath: path.join(__dirname, "../renderer/index.html"),
+      log
+    });
+    overlay.registerHotkey();
+    log.info("overlay manager ready");
+
     registerIpcHandlers({
       getDb: () => db,
       getScheduler: () => scheduler,
-      toggleOverlay: async () => ({ enabled: false }),
+      toggleOverlay: async () => overlay?.toggle() ?? { enabled: false },
       showMainWindow: async (hash?: string | null) => {
         if (mainWindow) {
           if (mainWindow.isMinimized()) mainWindow.restore();
@@ -510,6 +523,7 @@ async function run() {
       void (async () => {
         try {
           await persistWindowState(mainWindow);
+          await overlay?.persistState();
         } catch (e: unknown) {
           log.error("persistWindowState failed (before-quit)", { err: e instanceof Error ? e.message : String(e) });
         } finally {
@@ -519,6 +533,8 @@ async function run() {
     });
 
     app.on("will-quit", () => {
+      void overlay?.dispose();
+      overlay = null;
       scheduler?.stop();
       scheduler = null;
       db?.db.close();
