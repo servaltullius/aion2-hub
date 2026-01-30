@@ -39,8 +39,7 @@ Users may paste Windows-style paths like `G:\Some Folder\Path`. In WSL these are
 - `pnpm --filter desktop build`
 - `pnpm --filter desktop package:portable`
 
-WSL에서 `package:portable`가 `wine --ia32`(rcedit) 관련 오류로 실패할 수 있음. 이 경우 대체 커맨드:
-- `cd apps/desktop && pnpm exec electron-builder --win portable --config.win.signAndEditExecutable=false`
+WSL에서 `wine --ia32`(rcedit) 의존성 때문에 빌드가 깨지지 않도록, 현재 `apps/desktop/package.json`의 `build.win.signAndEditExecutable=false`로 설정되어 있음.
 
 산출물:
 - `apps/desktop/release/AION2-HUB-<version>.exe`
