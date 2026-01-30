@@ -1,5 +1,6 @@
 import { BrowserWindow, app, globalShortcut, screen } from "electron";
-import path from "node:path";
+
+import { startForegroundWatcher } from "./foregroundWatcher.js";
 
 type Logger = {
   info: (msg: string, extra?: unknown) => void;
@@ -99,6 +100,12 @@ export function createOverlayManager(input: {
   let overlayWindow: BrowserWindow | null = null;
   let quitting = false;
   let saving = false;
+  let watcher: { stop: () => void } | null = null;
+  let autoMode = false;
+  let gameFocused = false;
+  let overlayFocused = false;
+
+  const isGameTitle = (title: string) => title.toLowerCase().includes("aion2");
 
   function getInitialState(): WindowState {
     const db = input.getDb();
@@ -147,6 +154,15 @@ export function createOverlayManager(input: {
     });
     overlayWindow = win;
 
+    win.on("focus", () => {
+      overlayFocused = true;
+      updateVisibility();
+    });
+    win.on("blur", () => {
+      overlayFocused = false;
+      updateVisibility();
+    });
+
     win.on("close", (event) => {
       if (quitting) return;
       event.preventDefault();
@@ -172,6 +188,60 @@ export function createOverlayManager(input: {
     return win;
   }
 
+  function stopWatcher() {
+    if (!watcher) return;
+    try {
+      watcher.stop();
+    } catch {
+      // ignore
+    }
+    watcher = null;
+    autoMode = false;
+    gameFocused = false;
+  }
+
+  function ensureWatcher() {
+    if (watcher) return;
+    const w = startForegroundWatcher({
+      log: input.log,
+      onUnavailable: () => {
+        stopWatcher();
+        updateVisibility();
+      },
+      onChange: (info) => {
+        gameFocused = isGameTitle(info.title);
+        updateVisibility();
+      }
+    });
+    if (!w) {
+      autoMode = false;
+      return;
+    }
+    watcher = w;
+    autoMode = true;
+  }
+
+  function updateVisibility() {
+    const win = overlayWindow;
+    if (!win || win.isDestroyed()) return;
+    if (!enabled) {
+      if (win.isVisible()) win.hide();
+      return;
+    }
+
+    if (!autoMode) {
+      if (!win.isVisible()) win.showInactive();
+      return;
+    }
+
+    const shouldShow = gameFocused || overlayFocused;
+    if (shouldShow) {
+      if (!win.isVisible()) win.showInactive();
+    } else {
+      if (win.isVisible()) win.hide();
+    }
+  }
+
   async function setEnabled(next: boolean) {
     enabled = next;
     const win = await ensureWindow();
@@ -181,9 +251,11 @@ export function createOverlayManager(input: {
       } catch {
         // ignore mode errors
       }
-      win.showInactive();
+      ensureWatcher();
+      updateVisibility();
     } else {
       win.hide();
+      stopWatcher();
       await persistState();
     }
     return { enabled };
@@ -208,6 +280,7 @@ export function createOverlayManager(input: {
   async function dispose() {
     quitting = true;
     unregisterHotkey();
+    stopWatcher();
     await persistState();
     if (overlayWindow && !overlayWindow.isDestroyed()) {
       overlayWindow.destroy();
@@ -228,4 +301,3 @@ export function createOverlayManager(input: {
     ensureWindow
   };
 }
-
