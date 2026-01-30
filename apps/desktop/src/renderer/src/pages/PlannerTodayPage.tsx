@@ -6,13 +6,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../co
 import { Input } from "../components/ui/input.js";
 import { Label } from "../components/ui/label.js";
 import { Select } from "../components/ui/select.js";
-import { isObject } from "../lib/guards.js";
 import { computeDurationSeconds, formatDurationSeconds } from "../planner/duration.js";
 import { recommendPlannerItems } from "../planner/recommend.js";
 import { formatCountdown, nextDailyResetAt, nextWeeklyResetAt } from "../planner/reset.js";
 import { startTimerWithConfirm } from "../planner/timer.js";
 
-import { asDurationStats, asOverview, estimateForBudget, type PlannerOverview } from "./planner/today/model.js";
+import { PlannerChargesCard } from "./planner/today/PlannerChargesCard.js";
+import { PlannerTaskListCard } from "./planner/today/PlannerTaskListCard.js";
+import { PlannerTimerCard } from "./planner/today/PlannerTimerCard.js";
+import { asDurationStats, asOverview, estimateForBudget, formatDate, type PlannerOverview } from "./planner/today/model.js";
 
 type AppCharacter = {
   id: string;
@@ -153,6 +155,88 @@ export function PlannerTodayPage(props: { activeCharacterId: string | null; char
     .filter((v) => v !== null);
   const sum = rec.totalMinutes;
 
+  async function toggleChecklist(input: { period: "DAILY" | "WEEKLY"; templateId: string; completed: boolean }) {
+    if (!overview) return;
+    setError(null);
+    setNotice(null);
+    try {
+      const raw = await window.aion2Hub.planner.toggleComplete({
+        characterId: overview.character.id,
+        templateId: input.templateId,
+        period: input.period,
+        completed: input.completed
+      });
+      const parsed = asOverview(raw);
+      if (parsed) setOverview(parsed);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "error");
+    }
+  }
+
+  function startFromTask(input: { templateId: string; title: string }) {
+    setError(null);
+    setNotice(null);
+    requestStartTimer({ templateId: input.templateId, title: input.title });
+  }
+
+  async function stopAndSaveTimer() {
+    if (!overview || !activeTimer) return;
+    const endedAtMs = Date.now();
+    const seconds = computeDurationSeconds(activeTimer.startedAtMs, endedAtMs);
+    setError(null);
+    setNotice(null);
+    try {
+      await window.aion2Hub.planner.addDuration({
+        characterId: overview.character.id,
+        templateId: activeTimer.templateId,
+        startedAt: new Date(activeTimer.startedAtMs).toISOString(),
+        endedAt: new Date(endedAtMs).toISOString(),
+        seconds
+      });
+      setActiveTimer(null);
+      setNotice(`기록했습니다: ${formatDurationSeconds(seconds)}`);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "error");
+    }
+  }
+
+  function cancelTimer() {
+    setActiveTimer(null);
+    setNotice("타이머를 취소했습니다. (저장되지 않음)");
+  }
+
+  async function useCharge(input: { templateId: string }) {
+    if (!overview) return;
+    setError(null);
+    setNotice(null);
+    try {
+      const raw = await window.aion2Hub.planner.useCharge({
+        characterId: overview.character.id,
+        templateId: input.templateId
+      });
+      const parsed = asOverview(raw);
+      if (parsed) setOverview(parsed);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "error");
+    }
+  }
+
+  async function undoCharge(input: { templateId: string }) {
+    if (!overview) return;
+    setError(null);
+    setNotice(null);
+    try {
+      const raw = await window.aion2Hub.planner.undoCharge({
+        characterId: overview.character.id,
+        templateId: input.templateId
+      });
+      const parsed = asOverview(raw);
+      if (parsed) setOverview(parsed);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "error");
+    }
+  }
+
   return (
     <section className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -200,60 +284,16 @@ export function PlannerTodayPage(props: { activeCharacterId: string | null; char
       {overview ? (
         <>
           {activeTimer ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>타이머</CardTitle>
-                <CardDescription>앱을 종료하면 타이머는 리셋됩니다. (저장은 Stop 시에만)</CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-wrap items-center gap-3">
-                <div className="min-w-0">
-                  <div className="text-sm font-medium">
-                    {(overview.daily.find((d) => d.templateId === activeTimer.templateId)?.title ??
-                      overview.weekly.find((w) => w.templateId === activeTimer.templateId)?.title ??
-                      activeTimer.templateId) as string}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    elapsed: {formatDurationSeconds(Math.max(0, Math.floor((timerNowMs - activeTimer.startedAtMs) / 1000)))}
-                  </div>
-                </div>
-                <div className="ml-auto flex gap-2">
-                  <Button
-                    variant="secondary"
-                    onClick={async () => {
-                      if (!overview) return;
-                      const endedAtMs = Date.now();
-                      const seconds = computeDurationSeconds(activeTimer.startedAtMs, endedAtMs);
-                      setError(null);
-                      setNotice(null);
-                      try {
-                        await window.aion2Hub.planner.addDuration({
-                          characterId: overview.character.id,
-                          templateId: activeTimer.templateId,
-                          startedAt: new Date(activeTimer.startedAtMs).toISOString(),
-                          endedAt: new Date(endedAtMs).toISOString(),
-                          seconds
-                        });
-                        setActiveTimer(null);
-                        setNotice(`기록했습니다: ${formatDurationSeconds(seconds)}`);
-                      } catch (e: unknown) {
-                        setError(e instanceof Error ? e.message : "error");
-                      }
-                    }}
-                  >
-                    Stop & Save
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setActiveTimer(null);
-                      setNotice("타이머를 취소했습니다. (저장되지 않음)");
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <PlannerTimerCard
+              title={
+                (overview.daily.find((d) => d.templateId === activeTimer.templateId)?.title ??
+                  overview.weekly.find((w) => w.templateId === activeTimer.templateId)?.title ??
+                  activeTimer.templateId) as string
+              }
+              elapsedSeconds={Math.max(0, Math.floor((timerNowMs - activeTimer.startedAtMs) / 1000))}
+              onStopSave={() => void stopAndSaveTimer()}
+              onCancel={cancelTimer}
+            />
           ) : null}
 
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -372,191 +412,28 @@ export function PlannerTodayPage(props: { activeCharacterId: string | null; char
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <CardTitle>DAILY</CardTitle>
-                  <Badge variant="muted">
-                    {dailyDone}/{dailyAll.length}
-                  </Badge>
-                </div>
-                <CardDescription>일일 체크</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {dailyAll.length === 0 ? <p className="text-sm text-muted-foreground">템플릿이 없습니다.</p> : null}
-                {dailyVisible.map((t) => (
-                  <div key={t.templateId} className="flex items-center gap-3 rounded-md border bg-background/30 px-3 py-2 text-sm">
-                    <input
-                      className="h-4 w-4 accent-primary"
-                      type="checkbox"
-                      checked={t.completed}
-                      onChange={async (e) => {
-                        setError(null);
-                        setNotice(null);
-                        try {
-                          const raw = await window.aion2Hub.planner.toggleComplete({
-                            characterId: overview.character.id,
-                            templateId: t.templateId,
-                            period: "DAILY",
-                            completed: e.target.checked
-                          });
-                          const parsed = asOverview(raw);
-                          if (parsed) setOverview(parsed);
-                        } catch (err: unknown) {
-                          setError(err instanceof Error ? err.message : "error");
-                        }
-                      }}
-                    />
-                    <span className="flex-1">{t.title}</span>
-                    <span className="text-xs text-muted-foreground">{t.estimateMinutes}m</span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setError(null);
-                        setNotice(null);
-                        requestStartTimer({ templateId: t.templateId, title: t.title });
-                      }}
-                    >
-                      Start
-                    </Button>
-                  </div>
-                ))}
-                {dailyAll.length > 0 && dailyVisible.length === 0 ? (
-                  <div className="rounded-md border bg-background/30 px-3 py-6 text-sm text-muted-foreground">표시할 항목이 없습니다.</div>
-                ) : null}
-              </CardContent>
-            </Card>
+            <PlannerTaskListCard
+              title="DAILY"
+              description="일일 체크"
+              totalCount={dailyAll.length}
+              doneCount={dailyDone}
+              visible={dailyVisible}
+              onToggle={(input) => toggleChecklist({ period: "DAILY", ...input })}
+              onStart={startFromTask}
+            />
 
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <CardTitle>WEEKLY</CardTitle>
-                  <Badge variant="muted">
-                    {weeklyDone}/{weeklyAll.length}
-                  </Badge>
-                </div>
-                <CardDescription>주간 체크</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {weeklyAll.length === 0 ? <p className="text-sm text-muted-foreground">템플릿이 없습니다.</p> : null}
-                {weeklyVisible.map((t) => (
-                  <div key={t.templateId} className="flex items-center gap-3 rounded-md border bg-background/30 px-3 py-2 text-sm">
-                    <input
-                      className="h-4 w-4 accent-primary"
-                      type="checkbox"
-                      checked={t.completed}
-                      onChange={async (e) => {
-                        setError(null);
-                        setNotice(null);
-                        try {
-                          const raw = await window.aion2Hub.planner.toggleComplete({
-                            characterId: overview.character.id,
-                            templateId: t.templateId,
-                            period: "WEEKLY",
-                            completed: e.target.checked
-                          });
-                          const parsed = asOverview(raw);
-                          if (parsed) setOverview(parsed);
-                        } catch (err: unknown) {
-                          setError(err instanceof Error ? err.message : "error");
-                        }
-                      }}
-                    />
-                    <span className="flex-1">{t.title}</span>
-                    <span className="text-xs text-muted-foreground">{t.estimateMinutes}m</span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setError(null);
-                        setNotice(null);
-                        requestStartTimer({ templateId: t.templateId, title: t.title });
-                      }}
-                    >
-                      Start
-                    </Button>
-                  </div>
-                ))}
-                {weeklyAll.length > 0 && weeklyVisible.length === 0 ? (
-                  <div className="rounded-md border bg-background/30 px-3 py-6 text-sm text-muted-foreground">표시할 항목이 없습니다.</div>
-                ) : null}
-              </CardContent>
-            </Card>
+            <PlannerTaskListCard
+              title="WEEKLY"
+              description="주간 체크"
+              totalCount={weeklyAll.length}
+              doneCount={weeklyDone}
+              visible={weeklyVisible}
+              onToggle={(input) => toggleChecklist({ period: "WEEKLY", ...input })}
+              onStart={startFromTask}
+            />
           </div>
 
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <CardTitle>CHARGE (티켓/충전)</CardTitle>
-                <Badge variant="muted">
-                  {chargesVisible.length}/{chargesAll.length}
-                </Badge>
-              </div>
-              <CardDescription>남은 스택과 다음 충전 시간을 표시합니다.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {chargesAll.length === 0 ? <p className="text-sm text-muted-foreground">충전형 템플릿이 없습니다.</p> : null}
-              {chargesVisible.map((c) => (
-                <div key={c.templateId} className="flex flex-wrap items-center gap-2 rounded-md border bg-background/30 px-3 py-2">
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium">{c.title}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {c.available}/{c.maxStacks} · recharge {c.rechargeHours}h · next {formatDate(c.nextRechargeAt)}
-                    </div>
-                  </div>
-
-                  <div className="ml-auto flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      disabled={c.available <= 0}
-                      onClick={async () => {
-                        setError(null);
-                        setNotice(null);
-                        try {
-                          const raw = await window.aion2Hub.planner.useCharge({
-                            characterId: overview.character.id,
-                            templateId: c.templateId
-                          });
-                          const parsed = asOverview(raw);
-                          if (parsed) setOverview(parsed);
-                        } catch (err: unknown) {
-                          setError(err instanceof Error ? err.message : "error");
-                        }
-                      }}
-                    >
-                      Use 1
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={c.available >= c.maxStacks}
-                      onClick={async () => {
-                        setError(null);
-                        setNotice(null);
-                        try {
-                          const raw = await window.aion2Hub.planner.undoCharge({
-                            characterId: overview.character.id,
-                            templateId: c.templateId
-                          });
-                          const parsed = asOverview(raw);
-                          if (parsed) setOverview(parsed);
-                        } catch (err: unknown) {
-                          setError(err instanceof Error ? err.message : "error");
-                        }
-                      }}
-                    >
-                      Undo
-                    </Button>
-                  </div>
-                </div>
-              ))}
-              {chargesAll.length > 0 && chargesVisible.length === 0 ? (
-                <div className="rounded-md border bg-background/30 px-3 py-6 text-sm text-muted-foreground">표시할 항목이 없습니다.</div>
-              ) : null}
-            </CardContent>
-          </Card>
+          <PlannerChargesCard allCount={chargesAll.length} visible={chargesVisible} onUse={useCharge} onUndo={undoCharge} />
         </>
       ) : active ? (
         <Card>
