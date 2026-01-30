@@ -1,11 +1,12 @@
 "use client";
 
-import { getModules } from "@aion2/core";
+import { getModules, loadModuleWidget } from "@aion2/core";
 import Link from "next/link";
 import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 
 import "../lib/moduleRegistry";
 import { loadEnabledModuleIds, subscribeEnabledModuleIds } from "../lib/moduleToggleStore";
+import { ErrorBoundary } from "./ErrorBoundary";
 
 type Loaded = { default: unknown };
 
@@ -15,19 +16,19 @@ type WidgetRef = {
   modulePermission: string;
   widgetId: string;
   title: string;
-  load: () => Promise<Loaded>;
   href?: string;
 };
 
 function WidgetCard({ widget }: { widget: WidgetRef }) {
+  const [attempt, setAttempt] = useState(0);
   const Component = useMemo(
     () =>
       lazy(async () => {
-        const mod = (await widget.load()) as Loaded;
+        const mod = (await loadModuleWidget(widget.moduleId, widget.widgetId)) as Loaded;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return { default: mod.default as any };
       }),
-    [widget]
+    [widget.moduleId, widget.widgetId, attempt]
   );
 
   return (
@@ -49,9 +50,29 @@ function WidgetCard({ widget }: { widget: WidgetRef }) {
         </div>
       ) : (
         <div className="widgetCardBody">
-          <Suspense fallback={<p style={{ margin: 0 }}>Loading…</p>}>
-            <Component />
-          </Suspense>
+          <ErrorBoundary
+            fallback={(error, reset) => (
+              <div>
+                <p style={{ margin: 0 }}>Failed to load.</p>
+                <pre style={{ whiteSpace: "pre-wrap" }}>
+                  <code>{error.message}</code>
+                </pre>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAttempt((v) => v + 1);
+                    reset();
+                  }}
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+          >
+            <Suspense fallback={<p style={{ margin: 0 }}>Loading…</p>}>
+              <Component />
+            </Suspense>
+          </ErrorBoundary>
         </div>
       )}
     </div>
@@ -78,7 +99,6 @@ export function DashboardWidgetGrid() {
         modulePermission: module.permission,
         widgetId: widget.id,
         title: widget.title,
-        load: widget.load,
         ...(module.pages[0]?.href ? { href: module.pages[0].href } : {})
       }))
     );

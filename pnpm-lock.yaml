@@ -41,6 +41,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@aion2/constants':
+        specifier: workspace:*
+        version: link:../../packages/constants
       '@aion2/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -66,6 +69,12 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@aion2/constants':
+        specifier: workspace:*
+        version: link:../../packages/constants
+      '@aion2/notices-client':
+        specifier: workspace:*
+        version: link:../../packages/notices-client
       cheerio:
         specifier: ^1.1.2
         version: 1.2.0
@@ -90,6 +99,9 @@ importers:
       tailwind-merge:
         specifier: ^3.4.0
         version: 3.4.0
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
     devDependencies:
       '@types/node':
         specifier: ^25.1.0
@@ -173,9 +185,15 @@ importers:
 
   apps/worker:
     dependencies:
+      '@aion2/constants':
+        specifier: workspace:*
+        version: link:../../packages/constants
       '@aion2/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@aion2/notices-client':
+        specifier: workspace:*
+        version: link:../../packages/notices-client
       bullmq:
         specifier: ^5.67.2
         version: 5.67.2
@@ -191,6 +209,8 @@ importers:
       ioredis:
         specifier: ^5.9.2
         version: 5.9.2
+
+  packages/constants: {}
 
   packages/core: {}
 
@@ -260,6 +280,8 @@ importers:
       '@types/react':
         specifier: ^19.0.0
         version: 19.2.10
+
+  packages/notices-client: {}
 
 packages:
 

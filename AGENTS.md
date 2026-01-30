@@ -33,6 +33,18 @@ Users may paste Windows-style paths like `G:\Some Folder\Path`. In WSL these are
 - Replace `\` with `/`
 - Keep spaces; quote paths in shell commands
 
+## Desktop: Windows 단일 EXE(Portable) 빌드
+
+기본 빌드:
+- `pnpm --filter desktop build`
+- `pnpm --filter desktop package:portable`
+
+WSL에서 `package:portable`가 `wine --ia32`(rcedit) 관련 오류로 실패할 수 있음. 이 경우 대체 커맨드:
+- `cd apps/desktop && pnpm exec electron-builder --win portable --config.win.signAndEditExecutable=false`
+
+산출물:
+- `apps/desktop/release/AION2-HUB-<version>.exe`
+
 <!-- skills-scout:start -->
 ## Skills (Auto-Pinned by skills-scout)
 

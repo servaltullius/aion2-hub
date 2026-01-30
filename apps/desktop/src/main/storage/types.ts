@@ -147,66 +147,124 @@ export type PlannerDurationRow = {
   seconds: number;
 };
 
-export type CollectibleKind = "TRACE" | "CUBE" | "MATERIAL";
-
-export type CollectibleScope = "ACCOUNT" | "CHARACTER";
-
-export type CollectibleFaction = "ELYOS" | "ASMO" | "BOTH";
-
-export type CollectibleListItem = {
+export type EconomyItem = {
   id: string;
-  kind: CollectibleKind;
-  map: string;
-  faction: CollectibleFaction | null;
-  region: string | null;
   name: string;
+  category: string | null;
   note: string | null;
-  x: number | null;
-  y: number | null;
-  source: string | null;
-  done: boolean;
-};
-
-export type CollectibleMap = {
-  name: string;
-  order: number;
-  type: string | null;
-  tileWidth: number;
-  tileHeight: number;
-  tilesCountX: number;
-  tilesCountY: number;
-  width: number;
-  height: number;
-  source: string | null;
-};
-
-export type CollectibleItemRow = {
-  id: string;
-  kind: CollectibleKind;
-  map: string;
-  faction: CollectibleFaction | null;
-  region: string | null;
-  name: string;
-  note: string | null;
-  x: number | null;
-  y: number | null;
-  source: string | null;
   createdAt: string;
   updatedAt: string;
 };
 
-export type CollectibleProgressRow = {
+export type EconomyPrice = {
   id: string;
-  scope: CollectibleScope;
-  characterId: string | null;
+  server: string;
   itemId: string;
-  done: boolean;
-  doneAt: string | null;
+  price: number;
+  recordedAt: string;
+  createdAt: string;
   updatedAt: string;
 };
 
+export type EconomyPriceWatchOp = "<" | "<=" | ">" | ">=";
+
+export type EconomyPriceWatch = {
+  id: string;
+  server: string;
+  itemId: string;
+  op: EconomyPriceWatchOp;
+  threshold: number;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type EconomyAlertEvent = {
+  id: string;
+  server: string;
+  itemId: string;
+  itemName: string;
+  op: EconomyPriceWatchOp;
+  threshold: number;
+  price: number;
+  triggeredAt: string;
+  readAt: string | null;
+};
+
+export type LootRun = {
+  id: string;
+  characterId: string;
+  server: string | null;
+  content: string;
+  role: string | null;
+  powerBracket: string | null;
+  startedAt: string | null;
+  endedAt: string | null;
+  seconds: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type LootRunDrop = {
+  id: string;
+  runId: string;
+  itemId: string | null;
+  itemName: string;
+  qty: number;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type LootRunCostKind = "KINAH" | "ITEM";
+
+export type LootRunCost = {
+  id: string;
+  runId: string;
+  kind: LootRunCostKind;
+  itemId: string | null;
+  itemName: string | null;
+  qty: number;
+  kinah: number;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type LootRunListItem = LootRun & {
+  dropCount: number;
+  costCount: number;
+};
+
+export type LootWeeklyReport = {
+  server: string | null;
+  weekStartIso: string;
+  weekEndIso: string;
+  totals: {
+    runs: number;
+    seconds: number;
+    value: number;
+    cost: number;
+    net: number;
+    valuePerHour: number;
+    netPerHour: number;
+    missingPriceItems: string[];
+  };
+  byContent: Array<{
+    content: string;
+    runs: number;
+    seconds: number;
+    value: number;
+    cost: number;
+    net: number;
+    valuePerHour: number;
+    netPerHour: number;
+  }>;
+  debug?: unknown;
+};
+
 export type UserBackup = {
-  schemaVersion: 1 | 2 | 3;
+  schemaVersion: 1 | 2 | 3 | 4;
   exportedAt: string;
   activeCharacterId: string | null;
   characters: Array<{
@@ -281,9 +339,70 @@ export type UserBackup = {
       stats: unknown;
     }>;
   };
-  collectibles?: {
-    items: CollectibleItemRow[];
-    progress: CollectibleProgressRow[];
+  economy?: {
+    items: Array<{
+      id: string;
+      name: string;
+      category: string | null;
+      note: string | null;
+      createdAt: string;
+      updatedAt: string;
+    }>;
+    prices: Array<{
+      id: string;
+      server: string;
+      itemId: string;
+      price: number;
+      recordedAt: string;
+      createdAt: string;
+      updatedAt: string;
+    }>;
+    watches: Array<{
+      id: string;
+      server: string;
+      itemId: string;
+      op: EconomyPriceWatchOp;
+      threshold: number;
+      active: boolean;
+      createdAt: string;
+      updatedAt: string;
+    }>;
+  };
+  loot?: {
+    runs: Array<{
+      id: string;
+      characterId: string;
+      server: string | null;
+      content: string;
+      role: string | null;
+      powerBracket: string | null;
+      startedAt: string | null;
+      endedAt: string | null;
+      seconds: number;
+      createdAt: string;
+      updatedAt: string;
+    }>;
+    drops: Array<{
+      id: string;
+      runId: string;
+      itemId: string | null;
+      itemName: string;
+      qty: number;
+      note: string | null;
+      createdAt: string;
+      updatedAt: string;
+    }>;
+    costs: Array<{
+      id: string;
+      runId: string;
+      kind: LootRunCostKind;
+      itemId: string | null;
+      itemName: string | null;
+      qty: number;
+      kinah: number;
+      note: string | null;
+      createdAt: string;
+      updatedAt: string;
+    }>;
   };
 };
-

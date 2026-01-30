@@ -6,9 +6,8 @@ import { randomUUID } from "node:crypto";
 import { app } from "electron";
 import initSqlJs, { type SqlJsStatic } from "sql.js";
 
-import { builtinCollectibles } from "../collectibles/builtin.js";
 import { SCHEMA_SQL } from "./schema.js";
-import { allRows, oneRow, type SqlJsDatabase } from "./sql.js";
+import { type SqlJsDatabase } from "./sql.js";
 import {
   getLatestDiff as getLatestDiffDomain,
   getLatestSnapshot as getLatestSnapshotDomain,
@@ -68,29 +67,41 @@ import {
   updatePlannerTemplate as updatePlannerTemplateDomain,
   useCharge as useChargeDomain
 } from "./domains/planner.js";
-import {
-  exportCollectibleItems as exportCollectibleItemsDomain,
-  exportCollectibleProgress as exportCollectibleProgressDomain,
-  importCollectibleItems as importCollectibleItemsDomain,
-  importCollectibleProgress as importCollectibleProgressDomain,
-  listCollectibleMaps as listCollectibleMapsDomain,
-  listCollectibles as listCollectiblesDomain,
-  setCollectibleDone as setCollectibleDoneDomain
-} from "./domains/collectibles.js";
 import { exportUserBackup as exportUserBackupDomain, importUserBackup as importUserBackupDomain } from "./domains/backup.js";
+import {
+  addEconomyPrice as addEconomyPriceDomain,
+  createEconomyWatch as createEconomyWatchDomain,
+  deleteEconomyItem as deleteEconomyItemDomain,
+  deleteEconomyWatch as deleteEconomyWatchDomain,
+  listEconomyAlertEvents as listEconomyAlertEventsDomain,
+  listEconomyItems as listEconomyItemsDomain,
+  listEconomyPrices as listEconomyPricesDomain,
+  listEconomyWatches as listEconomyWatchesDomain,
+  markEconomyAlertRead as markEconomyAlertReadDomain,
+  setEconomyWatchActive as setEconomyWatchActiveDomain,
+  updateEconomyItem as updateEconomyItemDomain
+} from "./domains/economy.js";
+import {
+  createLootRun as createLootRunDomain,
+  deleteLootRun as deleteLootRunDomain,
+  getLootRun as getLootRunDomain,
+  getLootWeeklyReport as getLootWeeklyReportDomain,
+  listLootRuns as listLootRunsDomain
+} from "./domains/loot.js";
 
 import type {
   BuildScorePreset,
   BuildScorePresetListItem,
   BuildScoreState,
   BuildScoreStat,
-  CollectibleFaction,
-  CollectibleItemRow,
-  CollectibleKind,
-  CollectibleListItem,
-  CollectibleMap,
-  CollectibleProgressRow,
-  CollectibleScope,
+  EconomyAlertEvent,
+  EconomyItem,
+  EconomyPrice,
+  EconomyPriceWatch,
+  EconomyPriceWatchOp,
+  LootRunCostKind,
+  LootRunListItem,
+  LootWeeklyReport,
   NoticeDiffBlock,
   NoticeSource,
   PlannerDurationRow,
@@ -112,13 +123,17 @@ export type {
   BuildScoreState,
   BuildScoreStat,
   BuildScoreUnit,
-  CollectibleFaction,
-  CollectibleItemRow,
-  CollectibleKind,
-  CollectibleListItem,
-  CollectibleMap,
-  CollectibleProgressRow,
-  CollectibleScope,
+  EconomyAlertEvent,
+  EconomyItem,
+  EconomyPrice,
+  EconomyPriceWatch,
+  EconomyPriceWatchOp,
+  LootRun,
+  LootRunCost,
+  LootRunCostKind,
+  LootRunDrop,
+  LootRunListItem,
+  LootWeeklyReport,
   NoticeDiffBlock,
   NoticeListItem,
   NoticeSource,
@@ -149,107 +164,7 @@ export class DesktopDb {
   init() {
     this.db.run("PRAGMA foreign_keys = ON;");
     this.db.run(SCHEMA_SQL);
-    this.#migrateSchema();
     this.ensureDefaults();
-  }
-
-  #migrateSchema() {
-    this.#migrateCollectibleItemTable();
-    this.#backfillCollectibleItemFactionFromMap();
-  }
-
-  #hasColumn(tableName: string, columnName: string) {
-    const rows = allRows(this.db, `PRAGMA table_info(${tableName})`, {});
-    return rows.some((r) => String(r.name) === columnName);
-  }
-
-  #migrateCollectibleItemTable() {
-    const hasFaction = this.#hasColumn("collectible_item", "faction");
-    const allowsMaterial = this.#collectibleItemAllowsMaterialKind();
-    if (hasFaction && allowsMaterial) {
-      this.db.run("CREATE INDEX IF NOT EXISTS idx_collectible_item_kind_faction ON collectible_item (kind, faction)");
-      return;
-    }
-
-    const fkRow = oneRow(this.db, "PRAGMA foreign_keys", {});
-    const fkWasOn = Number(fkRow?.foreign_keys ?? 0) === 1;
-
-    // Disabling foreign_keys must happen outside a transaction.
-    this.db.run("PRAGMA foreign_keys = OFF;");
-    this.db.run("BEGIN;");
-    try {
-      // Drop old indexes (if any) so we can recreate them after rebuilding the table.
-      this.db.run("DROP INDEX IF EXISTS idx_collectible_item_kind_map;");
-      this.db.run("DROP INDEX IF EXISTS idx_collectible_item_kind_region;");
-      this.db.run("DROP INDEX IF EXISTS idx_collectible_item_kind_faction;");
-
-      this.db.run("ALTER TABLE collectible_item RENAME TO collectible_item_old;");
-
-      this.db.run(
-        `
-        CREATE TABLE collectible_item (
-          id TEXT PRIMARY KEY,
-          kind TEXT NOT NULL CHECK(kind IN ('TRACE','CUBE','MATERIAL')),
-          map TEXT NOT NULL,
-          faction TEXT,
-          region TEXT,
-          name TEXT NOT NULL,
-          note TEXT,
-          x REAL,
-          y REAL,
-          source TEXT,
-          created_at TEXT NOT NULL,
-          updated_at TEXT NOT NULL
-        );
-        `
-      );
-
-      const selectFaction = hasFaction ? "faction" : "NULL";
-      this.db.run(
-        `
-        INSERT INTO collectible_item
-          (id, kind, map, faction, region, name, note, x, y, source, created_at, updated_at)
-        SELECT
-          id, kind, map, ${selectFaction} AS faction, region, name, note, x, y, source, created_at, updated_at
-        FROM collectible_item_old;
-        `
-      );
-
-      this.db.run("DROP TABLE collectible_item_old;");
-
-      this.db.run("CREATE INDEX IF NOT EXISTS idx_collectible_item_kind_map ON collectible_item (kind, map);");
-      this.db.run("CREATE INDEX IF NOT EXISTS idx_collectible_item_kind_region ON collectible_item (kind, region);");
-      this.db.run("CREATE INDEX IF NOT EXISTS idx_collectible_item_kind_faction ON collectible_item (kind, faction);");
-
-      this.db.run("COMMIT;");
-    } catch (e) {
-      try {
-        this.db.run("ROLLBACK;");
-      } catch {
-        // ignore rollback errors
-      }
-      throw e;
-    } finally {
-      if (fkWasOn) this.db.run("PRAGMA foreign_keys = ON;");
-    }
-  }
-
-  #collectibleItemAllowsMaterialKind() {
-    const row = oneRow(
-      this.db,
-      "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'collectible_item' LIMIT 1",
-      {}
-    );
-    const sql = row?.sql ? String(row.sql) : "";
-    if (!sql) return false;
-    return sql.includes("'MATERIAL'") || sql.includes("\"MATERIAL\"");
-  }
-
-  #backfillCollectibleItemFactionFromMap() {
-    if (!this.#hasColumn("collectible_item", "faction")) return;
-    this.db.run("UPDATE collectible_item SET faction = 'ELYOS' WHERE faction IS NULL AND map LIKE 'World_L_%'");
-    this.db.run("UPDATE collectible_item SET faction = 'ASMO' WHERE faction IS NULL AND map LIKE 'World_D_%'");
-    this.db.run("UPDATE collectible_item SET faction = 'BOTH' WHERE faction IS NULL AND map LIKE 'Abyss_%'");
   }
 
   async persist() {
@@ -317,33 +232,6 @@ export class DesktopDb {
       `,
       { $id: "default", $hhmm: "09:00", $day: 1, $now: now }
     );
-
-    this.#ensureCollectiblesSeeded(now);
-  }
-
-  #ensureCollectiblesSeeded(now: string) {
-    const sql = `
-      INSERT OR IGNORE INTO collectible_item
-        (id, kind, map, faction, region, name, note, x, y, source, created_at, updated_at)
-      VALUES
-        ($id, $kind, $map, $faction, $region, $name, $note, $x, $y, $source, $now, $now)
-    `;
-
-    for (const item of builtinCollectibles) {
-      this.db.run(sql, {
-        $id: item.id,
-        $kind: item.kind,
-        $map: item.map,
-        $faction: collectibleFactionFromMap(item.map),
-        $region: item.region,
-        $name: item.name,
-        $note: null,
-        $x: item.x,
-        $y: item.y,
-        $source: item.source,
-        $now: now
-      });
-    }
   }
 
   getSetting(key: string) {
@@ -536,47 +424,88 @@ export class DesktopDb {
     return getPlannerDurationStatsDomain(this.db, input);
   }
 
-  listCollectibles(input: {
-    scope: CollectibleScope;
-    characterId?: string | null;
-    kind?: CollectibleKind;
-    faction?: CollectibleFaction;
-    q?: string;
-    onlyRemaining?: boolean;
-  }): CollectibleListItem[] {
-    return listCollectiblesDomain(this.db, input);
-  }
-
-  listCollectibleMaps(): CollectibleMap[] {
-    return listCollectibleMapsDomain(this.db);
-  }
-
-  exportCollectibleItems(): CollectibleItemRow[] {
-    return exportCollectibleItemsDomain(this.db);
-  }
-
-  exportCollectibleProgress(): CollectibleProgressRow[] {
-    return exportCollectibleProgressDomain(this.db);
-  }
-
-  importCollectibleItems(input: { items: unknown; defaultSource?: string | null; wrapInTransaction?: boolean }) {
-    return importCollectibleItemsDomain(this.db, input);
-  }
-
-  importCollectibleProgress(input: { progress: unknown; wrapInTransaction?: boolean }) {
-    return importCollectibleProgressDomain(this.db, input);
-  }
-
-  setCollectibleDone(input: { scope: CollectibleScope; characterId?: string | null; itemId: string; done: boolean }) {
-    setCollectibleDoneDomain(this.db, input);
-  }
-
   exportUserBackup(): UserBackup {
     return exportUserBackupDomain(this.db);
   }
 
   importUserBackup(raw: unknown) {
     importUserBackupDomain(this.db, raw);
+  }
+
+  // Economy (manual prices + alerts)
+  listEconomyItems(input?: { q?: string | null; limit?: number | null }): EconomyItem[] {
+    return listEconomyItemsDomain(this.db, input);
+  }
+
+  updateEconomyItem(input: { id: string; name: string; category?: string | null; note?: string | null }) {
+    updateEconomyItemDomain(this.db, input);
+  }
+
+  deleteEconomyItem(itemId: string) {
+    deleteEconomyItemDomain(this.db, itemId);
+  }
+
+  addEconomyPrice(input: { server: string; itemName: string; price: number; recordedAt?: string | null }) {
+    return addEconomyPriceDomain(this.db, input);
+  }
+
+  listEconomyPrices(input: { server: string; itemId: string; limit?: number | null }): EconomyPrice[] {
+    return listEconomyPricesDomain(this.db, input);
+  }
+
+  listEconomyWatches(input: { server: string }) {
+    return listEconomyWatchesDomain(this.db, input);
+  }
+
+  createEconomyWatch(input: { server: string; itemName: string; op: EconomyPriceWatchOp; threshold: number }): EconomyPriceWatch {
+    return createEconomyWatchDomain(this.db, input);
+  }
+
+  setEconomyWatchActive(input: { id: string; active: boolean }) {
+    setEconomyWatchActiveDomain(this.db, input);
+  }
+
+  deleteEconomyWatch(watchId: string) {
+    deleteEconomyWatchDomain(this.db, watchId);
+  }
+
+  listEconomyAlertEvents(input?: { server?: string | null; unreadOnly?: boolean | null; limit?: number | null }): EconomyAlertEvent[] {
+    return listEconomyAlertEventsDomain(this.db, input);
+  }
+
+  markEconomyAlertRead(input: { id: string }) {
+    markEconomyAlertReadDomain(this.db, input);
+  }
+
+  // Loot logbook (manual runs + ROI report)
+  listLootRuns(input: { characterId: string; limit?: number | null }): LootRunListItem[] {
+    return listLootRunsDomain(this.db, input);
+  }
+
+  getLootRun(runId: string) {
+    return getLootRunDomain(this.db, runId);
+  }
+
+  createLootRun(input: {
+    characterId: string;
+    content: string;
+    role?: string | null;
+    powerBracket?: string | null;
+    startedAt?: string | null;
+    endedAt?: string | null;
+    seconds?: number | null;
+    drops?: Array<{ itemName: string; qty: number; note?: string | null }> | null;
+    costs?: Array<{ kind: LootRunCostKind; kinah?: number; itemName?: string | null; qty?: number; note?: string | null }> | null;
+  }) {
+    return createLootRunDomain(this.db, input);
+  }
+
+  deleteLootRun(input: { id: string; characterId: string }) {
+    deleteLootRunDomain(this.db, input);
+  }
+
+  getLootWeeklyReport(input: { characterId: string; server?: string | null; nowIso?: string | null }): LootWeeklyReport {
+    return getLootWeeklyReportDomain(this.db, input);
   }
 }
 
@@ -605,13 +534,4 @@ export async function openDesktopDb(dataDir: string) {
   await wrapped.persist();
 
   return wrapped;
-}
-
-function collectibleFactionFromMap(map: string): CollectibleFaction | null {
-  const m = map.trim();
-  if (!m) return null;
-  if (m.startsWith("World_L_")) return "ELYOS";
-  if (m.startsWith("World_D_")) return "ASMO";
-  if (m.startsWith("Abyss_")) return "BOTH";
-  return null;
 }

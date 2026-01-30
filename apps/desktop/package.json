@@ -16,6 +16,8 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@aion2/constants": "workspace:*",
+    "@aion2/notices-client": "workspace:*",
     "cheerio": "^1.1.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -23,7 +25,8 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "sql.js": "^1.13.0",
-    "tailwind-merge": "^3.4.0"
+    "tailwind-merge": "^3.4.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^25.1.0",

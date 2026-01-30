@@ -47,17 +47,29 @@ contextBridge.exposeInMainWorld("aion2Hub", {
     exportJson: async (input: unknown) => ipcRenderer.invoke("buildScorePreset:exportJson", input),
     importJson: async (input: unknown) => ipcRenderer.invoke("buildScorePreset:importJson", input)
   },
-  collectibles: {
-    list: async (input: unknown) => ipcRenderer.invoke("collectibles:list", input),
-    listMaps: async () => ipcRenderer.invoke("collectibles:listMaps"),
-    exportItemsJson: async () => ipcRenderer.invoke("collectibles:exportItemsJson"),
-    importItemsJson: async () => ipcRenderer.invoke("collectibles:importItemsJson"),
-    syncAion2Im: async () => ipcRenderer.invoke("collectibles:syncAion2Im"),
-    toggleDone: async (input: unknown) => ipcRenderer.invoke("collectibles:toggleDone", input)
-  },
   backup: {
     exportJson: async () => ipcRenderer.invoke("backup:exportJson"),
     importJson: async () => ipcRenderer.invoke("backup:importJson")
+  },
+  economy: {
+    listItems: async (input: unknown) => ipcRenderer.invoke("economy:listItems", input),
+    updateItem: async (input: unknown) => ipcRenderer.invoke("economy:updateItem", input),
+    deleteItem: async (input: unknown) => ipcRenderer.invoke("economy:deleteItem", input),
+    addPrice: async (input: unknown) => ipcRenderer.invoke("economy:addPrice", input),
+    listPrices: async (input: unknown) => ipcRenderer.invoke("economy:listPrices", input),
+    listWatches: async (input: unknown) => ipcRenderer.invoke("economy:listWatches", input),
+    createWatch: async (input: unknown) => ipcRenderer.invoke("economy:createWatch", input),
+    setWatchActive: async (input: unknown) => ipcRenderer.invoke("economy:setWatchActive", input),
+    deleteWatch: async (input: unknown) => ipcRenderer.invoke("economy:deleteWatch", input),
+    listAlerts: async (input: unknown) => ipcRenderer.invoke("economy:listAlerts", input),
+    markAlertRead: async (input: unknown) => ipcRenderer.invoke("economy:markAlertRead", input)
+  },
+  loot: {
+    listRuns: async (input: unknown) => ipcRenderer.invoke("loot:listRuns", input),
+    getRun: async (input: unknown) => ipcRenderer.invoke("loot:getRun", input),
+    createRun: async (input: unknown) => ipcRenderer.invoke("loot:createRun", input),
+    deleteRun: async (input: unknown) => ipcRenderer.invoke("loot:deleteRun", input),
+    weeklyReport: async (input: unknown) => ipcRenderer.invoke("loot:weeklyReport", input)
   },
   notices: {
     list: async (input: unknown) => ipcRenderer.invoke("notices:list", input),

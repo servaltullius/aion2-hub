@@ -1,5 +1,6 @@
 import "dotenv/config";
 
+import { PAGINATION } from "@aion2/constants";
 import { prisma } from "@aion2/db";
 
 import { syncNotices } from "./notices/sync.js";
@@ -32,8 +33,8 @@ const sources =
       ? (["UPDATE"] as const)
       : (["NOTICE", "UPDATE"] as const);
 
-const maxPages = Number(args.get("maxPages") ?? 5);
-const pageSize = Number(args.get("pageSize") ?? 18);
+const maxPages = Number(args.get("maxPages") ?? PAGINATION.NOTICES_SYNC_DEFAULT_MAX_PAGES);
+const pageSize = Number(args.get("pageSize") ?? PAGINATION.NOTICES_SYNC_DEFAULT_PAGE_SIZE);
 const includePinned = args.get("noPinned") ? false : true;
 const dryRun = args.get("dryRun") ? true : false;
 
@@ -42,8 +43,8 @@ const startedAt = Date.now();
 try {
   const result = await syncNotices({
     sources: [...sources],
-    maxPages: Number.isFinite(maxPages) && maxPages > 0 ? maxPages : 5,
-    pageSize: Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 18,
+    maxPages: Number.isFinite(maxPages) && maxPages > 0 ? maxPages : PAGINATION.NOTICES_SYNC_DEFAULT_MAX_PAGES,
+    pageSize: Number.isFinite(pageSize) && pageSize > 0 ? pageSize : PAGINATION.NOTICES_SYNC_DEFAULT_PAGE_SIZE,
     includePinned,
     dryRun
   });

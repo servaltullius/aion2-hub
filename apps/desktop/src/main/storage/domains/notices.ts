@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto";
 
+import { PAGINATION } from "@aion2/constants";
 import { allRows, escapeLike, oneRow, safeJsonParse, type ParamsObject, type SqlJsDatabase } from "../sql.js";
 import type { NoticeDiffBlock, NoticeListItem, NoticeSource } from "../types.js";
 
 export function listNotices(db: SqlJsDatabase, input: { source?: NoticeSource; q?: string; page: number; pageSize: number }) {
   const page = Math.max(1, input.page);
-  const pageSize = Math.max(1, Math.min(50, input.pageSize));
+  const pageSize = Math.max(1, Math.min(PAGINATION.NOTICES_LIST_MAX_PAGE_SIZE, input.pageSize));
   const offset = (page - 1) * pageSize;
 
   const where: string[] = [];

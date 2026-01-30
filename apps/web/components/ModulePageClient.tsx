@@ -4,10 +4,11 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 
-import { resolveModulePage } from "@aion2/core";
+import { loadModulePage, resolveModulePage } from "@aion2/core";
 
 import "../lib/moduleRegistry";
 import { loadEnabledModuleIds, subscribeEnabledModuleIds } from "../lib/moduleToggleStore";
+import { ErrorBoundary } from "./ErrorBoundary";
 
 type Loaded = { default: unknown };
 
@@ -66,22 +67,43 @@ export function ModulePageClient() {
     );
   }
 
+  const [attempt, setAttempt] = useState(0);
   const PageComponent = useMemo(
     () =>
       lazy(async () => {
-        const mod = (await page.load()) as Loaded;
+        const mod = (await loadModulePage(moduleId, pageId)) as Loaded;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return { default: mod.default as any };
       }),
-    [page]
+    [moduleId, pageId, attempt]
   );
 
   return (
     <main>
       <h1 style={{ marginTop: 0 }}>{page.title}</h1>
-      <Suspense fallback={<p>Loading…</p>}>
-        <PageComponent />
-      </Suspense>
+      <ErrorBoundary
+        fallback={(error, reset) => (
+          <div>
+            <p style={{ marginTop: 0 }}>Failed to load this page.</p>
+            <pre style={{ whiteSpace: "pre-wrap" }}>
+              <code>{error.message}</code>
+            </pre>
+            <button
+              type="button"
+              onClick={() => {
+                setAttempt((v) => v + 1);
+                reset();
+              }}
+            >
+              Retry
+            </button>
+          </div>
+        )}
+      >
+        <Suspense fallback={<p>Loading…</p>}>
+          <PageComponent />
+        </Suspense>
+      </ErrorBoundary>
     </main>
   );
 }

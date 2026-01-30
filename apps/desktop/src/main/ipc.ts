@@ -4,7 +4,8 @@ import { registerAppHandlers } from "./ipcHandlers/appHandlers.js";
 import { registerBackupHandlers } from "./ipcHandlers/backupHandlers.js";
 import { registerBuildScoreHandlers } from "./ipcHandlers/buildScoreHandlers.js";
 import { registerCharactersHandlers } from "./ipcHandlers/charactersHandlers.js";
-import { registerCollectiblesHandlers } from "./ipcHandlers/collectiblesHandlers.js";
+import { registerEconomyHandlers } from "./ipcHandlers/economyHandlers.js";
+import { registerLootHandlers } from "./ipcHandlers/lootHandlers.js";
 import { registerNoticesHandlers } from "./ipcHandlers/noticesHandlers.js";
 import { registerPlannerHandlers } from "./ipcHandlers/plannerHandlers.js";
 
@@ -14,7 +15,7 @@ export function registerIpcHandlers(deps: IpcDeps) {
   registerCharactersHandlers(deps);
   registerPlannerHandlers(deps);
   registerBuildScoreHandlers(deps);
-  registerCollectiblesHandlers(deps);
+  registerEconomyHandlers(deps);
+  registerLootHandlers(deps);
   registerBackupHandlers(deps);
 }
-

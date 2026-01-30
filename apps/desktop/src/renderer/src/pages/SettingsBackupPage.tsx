@@ -53,7 +53,7 @@ export function SettingsBackupPage() {
                 setError(null);
                 try {
                   const ok = window.confirm(
-                    "Import는 현재 replace 방식입니다. (캐릭터/플래너/수집/세팅 등이 백업 파일 기준으로 교체될 수 있습니다)\n\n계속할까요?"
+                    "Import는 현재 replace 방식입니다. (캐릭터/플래너/빌드점수/세팅 등이 백업 파일 기준으로 교체될 수 있습니다)\n\n계속할까요?"
                   );
                   if (!ok) return;
                   const raw = await window.aion2Hub.backup.importJson();

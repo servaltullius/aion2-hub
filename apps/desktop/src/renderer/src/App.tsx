@@ -8,9 +8,10 @@ import { Select } from "./components/ui/select.js";
 import { cn } from "./lib/utils.js";
 import { CharactersPage } from "./pages/CharactersPage.js";
 import { BuildScorePage } from "./pages/BuildScorePage.js";
-import { CollectiblesPage } from "./pages/CollectiblesPage.js";
 import { DashboardPage } from "./pages/DashboardPage.js";
+import { EconomyPage } from "./pages/EconomyPage.js";
 import { LinksOfficialPage } from "./pages/LinksOfficialPage.js";
+import { LootLogbookPage } from "./pages/LootLogbookPage.js";
 import { PlannerStatsPage } from "./pages/PlannerStatsPage.js";
 import { PlannerTemplatesPage } from "./pages/PlannerTemplatesPage.js";
 import { PlannerTodayPage } from "./pages/PlannerTodayPage.js";
@@ -20,13 +21,14 @@ import { SettingsSafetyPage } from "./pages/SettingsSafetyPage.js";
 
 type Route =
   | { name: "dashboard" }
-  | { name: "collectibles" }
   | { name: "noticesFeed" }
   | { name: "noticesDiff"; id: string }
   | { name: "plannerToday" }
   | { name: "plannerTemplates" }
   | { name: "plannerStats" }
   | { name: "buildScore" }
+  | { name: "lootLogbook" }
+  | { name: "economy" }
   | { name: "linksOfficial" }
   | { name: "characters" }
   | { name: "settingsModules" }
@@ -49,12 +51,14 @@ function parseRoute(hash: string): Route {
   switch (path) {
     case "/":
       return { name: "dashboard" };
-    case "/m/collectibles":
-      return { name: "collectibles" };
     case "/m/notices/feed":
       return { name: "noticesFeed" };
     case "/m/build/score":
       return { name: "buildScore" };
+    case "/m/loot/logbook":
+      return { name: "lootLogbook" };
+    case "/m/economy":
+      return { name: "economy" };
     case "/m/planner/today":
       return { name: "plannerToday" };
     case "/m/planner/templates":
@@ -275,7 +279,6 @@ export function App() {
           <div className="px-3 py-2 text-xs font-semibold text-muted-foreground">MAIN</div>
           <SidebarLink href="#/" label="Dashboard" active={route.name === "dashboard"} />
           <SidebarLink href="#/characters" label="Characters" active={route.name === "characters"} />
-          <SidebarLink href="#/m/collectibles" label="Collectibles" active={route.name === "collectibles"} />
 
           <div className="mt-4 px-3 py-2 text-xs font-semibold text-muted-foreground">PLANNER</div>
           <SidebarLink href="#/m/planner/today" label="Today" active={route.name === "plannerToday"} />
@@ -284,6 +287,12 @@ export function App() {
 
           <div className="mt-4 px-3 py-2 text-xs font-semibold text-muted-foreground">BUILD</div>
           <SidebarLink href="#/m/build/score" label="Score" active={route.name === "buildScore"} />
+
+          <div className="mt-4 px-3 py-2 text-xs font-semibold text-muted-foreground">LOGBOOK</div>
+          <SidebarLink href="#/m/loot/logbook" label="Loot" active={route.name === "lootLogbook"} />
+
+          <div className="mt-4 px-3 py-2 text-xs font-semibold text-muted-foreground">ECONOMY</div>
+          <SidebarLink href="#/m/economy" label="Prices" active={route.name === "economy"} />
 
           <div className="mt-4 px-3 py-2 text-xs font-semibold text-muted-foreground">NOTICES</div>
           <SidebarLink href="#/m/notices/feed" label="Feed" active={route.name === "noticesFeed"} />
@@ -299,9 +308,6 @@ export function App() {
 
         <main className="flex-1 overflow-y-auto bg-muted/5 p-6">
           {route.name === "dashboard" ? <DashboardPage /> : null}
-          {route.name === "collectibles" ? (
-            <CollectiblesPage activeCharacterId={activeCharacterId} characters={characters} />
-          ) : null}
 
           {route.name === "noticesFeed" ? <FeedPage /> : null}
           {route.name === "noticesDiff" ? <DiffPage id={route.id} /> : null}
@@ -315,6 +321,12 @@ export function App() {
           {route.name === "buildScore" ? (
             <BuildScorePage activeCharacterId={activeCharacterId} characters={characters} />
           ) : null}
+
+          {route.name === "lootLogbook" ? (
+            <LootLogbookPage activeCharacterId={activeCharacterId} characters={characters} />
+          ) : null}
+
+          {route.name === "economy" ? <EconomyPage activeCharacterId={activeCharacterId} characters={characters} /> : null}
 
           {route.name === "linksOfficial" ? <LinksOfficialPage /> : null}
 

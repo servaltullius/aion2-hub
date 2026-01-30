@@ -14,7 +14,7 @@ export function SettingsModulesPage() {
           <CardDescription>Discord/Legion은 스코프에서 제외합니다.</CardDescription>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
-          Notices / Planner / Collectibles / Links / Characters / Backup
+          Notices / Planner / BuildScore / Loot Logbook / Economy / Links / Characters / Backup
         </CardContent>
       </Card>
     </section>
