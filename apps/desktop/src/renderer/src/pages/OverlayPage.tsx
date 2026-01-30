@@ -6,6 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../co
 import { Select } from "../components/ui/select.js";
 import { cn } from "../lib/utils.js";
 
+import { OverlayPlanner } from "./overlay/OverlayPlanner.js";
+
 type AppCharacter = {
   id: string;
   name: string;
@@ -99,13 +101,7 @@ export function OverlayPage(props: {
       </div>
 
       {props.tab === "planner" ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Planner mini</CardTitle>
-            <CardDescription>예정: 추천 숙제 + 타이머 + 체크</CardDescription>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">다음 커밋에서 구현합니다.</CardContent>
-        </Card>
+        <OverlayPlanner activeCharacterId={props.activeCharacterId} />
       ) : (
         <Card>
           <CardHeader>
