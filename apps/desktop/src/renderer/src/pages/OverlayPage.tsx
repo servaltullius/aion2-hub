@@ -2,11 +2,11 @@ import type { CSSProperties } from "react";
 
 import { Badge } from "../components/ui/badge.js";
 import { Button } from "../components/ui/button.js";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card.js";
 import { Select } from "../components/ui/select.js";
 import { cn } from "../lib/utils.js";
 
 import { OverlayPlanner } from "./overlay/OverlayPlanner.js";
+import { OverlayLootQuickLog } from "./overlay/OverlayLootQuickLog.js";
 
 type AppCharacter = {
   id: string;
@@ -103,13 +103,7 @@ export function OverlayPage(props: {
       {props.tab === "planner" ? (
         <OverlayPlanner activeCharacterId={props.activeCharacterId} />
       ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Loot Log</CardTitle>
-            <CardDescription>예정: 원정/토벌 드랍 빠른 기록</CardDescription>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">다음 커밋에서 구현합니다.</CardContent>
-        </Card>
+        <OverlayLootQuickLog activeCharacterId={props.activeCharacterId} />
       )}
     </div>
   );
