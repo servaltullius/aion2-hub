@@ -1,8 +1,11 @@
-import { prisma, type NoticeSource } from "@aion2/db";
+import type { NoticeSource } from "@aion2/db";
+import { PAGINATION } from "@aion2/constants";
+import { parseIsoDate } from "@aion2/notices-client";
 
 import { buildLineDiffJson } from "./diff.js";
 import { normalizeAndHashNoticeHtml } from "./normalize.js";
 import { fetchArticleDetail, fetchLatestArticleMetas, type PlayncBoardAlias } from "./plaync.js";
+import { prismaNoticeSyncRepo, type NoticeSyncRepo } from "./repo.js";
 
 export type SyncNoticesOptions = {
   sources: NoticeSource[];
@@ -17,17 +20,16 @@ const SOURCE_TO_ALIAS: Record<NoticeSource, PlayncBoardAlias> = {
   UPDATE: "update_ko"
 };
 
-function parseDate(value: string | undefined) {
-  if (!value) return null;
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? null : d;
-}
+export async function syncNotices(
+  partial: Partial<SyncNoticesOptions> = {},
+  deps: { repo?: NoticeSyncRepo } = {}
+) {
+  const repo = deps.repo ?? prismaNoticeSyncRepo;
 
-export async function syncNotices(partial: Partial<SyncNoticesOptions> = {}) {
   const options: SyncNoticesOptions = {
     sources: ["NOTICE", "UPDATE"],
-    maxPages: 5,
-    pageSize: 18,
+    maxPages: PAGINATION.NOTICES_SYNC_DEFAULT_MAX_PAGES,
+    pageSize: PAGINATION.NOTICES_SYNC_DEFAULT_PAGE_SIZE,
     includePinned: true,
     dryRun: false,
     ...partial
@@ -51,21 +53,11 @@ export async function syncNotices(partial: Partial<SyncNoticesOptions> = {}) {
     totals.metasFetched += metas.length;
 
     for (const meta of metas) {
-      const existingLatest = options.dryRun
-        ? null
-        : await prisma.noticeSnapshot.findFirst({
-            where: {
-              noticeItem: {
-                source,
-                externalId: meta.id
-              }
-            },
-            orderBy: { fetchedAt: "desc" },
-            select: { id: true, contentHash: true, normalizedText: true }
-          });
+      const existingLatest = options.dryRun ? null : await repo.findLatestSnapshot({ source, externalId: meta.id });
 
       const detail = await fetchArticleDetail(alias, meta.id);
-      const publishedAt = parseDate(detail.publishedAt ?? detail.postedAt);
+      const publishedAtIso = parseIsoDate(detail.publishedAt ?? detail.postedAt);
+      const publishedAt = publishedAtIso ? new Date(publishedAtIso) : null;
 
       const { normalizedText, contentHash } = normalizeAndHashNoticeHtml(detail.contentHtml);
 
@@ -73,28 +65,16 @@ export async function syncNotices(partial: Partial<SyncNoticesOptions> = {}) {
         continue;
       }
 
-      const item = await prisma.noticeItem.upsert({
-        where: { source_externalId: { source, externalId: detail.id } },
-        create: {
-          source,
-          externalId: detail.id,
-          url: detail.url,
-          title: detail.title,
-          publishedAt
-        },
-        update: {
-          url: detail.url,
-          title: detail.title,
-          publishedAt
-        }
+      const item = await repo.upsertItem({
+        source,
+        externalId: detail.id,
+        url: detail.url,
+        title: detail.title,
+        publishedAt
       });
       totals.itemsUpserted += 1;
 
-      const snapshot = await prisma.noticeSnapshot.upsert({
-        where: { noticeItemId_contentHash: { noticeItemId: item.id, contentHash } },
-        create: { noticeItemId: item.id, contentHash, normalizedText },
-        update: {}
-      });
+      const snapshot = await repo.upsertSnapshot({ noticeItemId: item.id, contentHash, normalizedText });
       totals.snapshotsUpserted += 1;
 
       if (!existingLatest) continue;
@@ -103,20 +83,11 @@ export async function syncNotices(partial: Partial<SyncNoticesOptions> = {}) {
 
       const diffJson = buildLineDiffJson(existingLatest.normalizedText, normalizedText);
 
-      await prisma.noticeDiff.upsert({
-        where: {
-          fromSnapshotId_toSnapshotId: {
-            fromSnapshotId: existingLatest.id,
-            toSnapshotId: snapshot.id
-          }
-        },
-        create: {
-          noticeItemId: item.id,
-          fromSnapshotId: existingLatest.id,
-          toSnapshotId: snapshot.id,
-          diffJson
-        },
-        update: { diffJson }
+      await repo.upsertDiff({
+        noticeItemId: item.id,
+        fromSnapshotId: existingLatest.id,
+        toSnapshotId: snapshot.id,
+        diffJson
       });
       totals.diffsUpserted += 1;
     }

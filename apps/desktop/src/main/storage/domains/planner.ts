@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { PAGINATION } from "@aion2/constants";
 import { dailyPeriodKey, weeklyPeriodKey } from "../../planner/period.js";
 
 import { allRows, oneRow, type ParamsObject, type SqlJsDatabase } from "../sql.js";
@@ -461,7 +462,10 @@ export function addPlannerDuration(
 }
 
 export function listPlannerDurations(db: SqlJsDatabase, input: { characterId: string; limit?: number }): PlannerDurationRow[] {
-  const limit = Math.max(1, Math.min(200, Math.floor(input.limit ?? 50)));
+  const limit = Math.max(
+    1,
+    Math.min(PAGINATION.PLANNER_DURATION_MAX_LIMIT, Math.floor(input.limit ?? PAGINATION.PLANNER_DURATION_DEFAULT_LIMIT))
+  );
   const rows = allRows(
     db,
     `

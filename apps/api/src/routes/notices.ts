@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 
+import { PAGINATION } from "@aion2/constants";
 import { prisma, type NoticeSource } from "@aion2/db";
 import { z } from "zod";
 
@@ -14,7 +15,12 @@ const listQuerySchema = z.object({
   source: z.string().optional(),
   q: z.string().optional(),
   page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(50).default(20)
+  pageSize: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(PAGINATION.NOTICES_LIST_MAX_PAGE_SIZE)
+    .default(PAGINATION.NOTICES_LIST_DEFAULT_PAGE_SIZE)
 });
 
 const idParamSchema = z.object({
@@ -113,4 +119,3 @@ export async function registerNoticesRoutes(app: FastifyInstance) {
     return { diff: latestDiff };
   });
 }
-

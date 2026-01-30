@@ -1,5 +1,8 @@
 import type { DesktopDb, NoticeSource } from "../storage/db.js";
 
+import { PAGINATION } from "@aion2/constants";
+import { parseIsoDate } from "@aion2/notices-client";
+
 import { buildLineDiffJson } from "./diff.js";
 import { normalizeAndHashNoticeHtml } from "./normalize.js";
 import {
@@ -21,12 +24,6 @@ const SOURCE_TO_ALIAS: Record<NoticeSource, PlayncBoardAlias> = {
   UPDATE: "update_ko"
 };
 
-function parseIsoDate(value: string | undefined) {
-  if (!value) return null;
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? null : d.toISOString();
-}
-
 function effectiveUpdatedAt(meta: PlayncArticleMeta) {
   return parseIsoDate(meta.updatedAt) ?? parseIsoDate(meta.publishedAt);
 }
@@ -35,7 +32,7 @@ export async function syncNotices(db: DesktopDb, partial: Partial<SyncNoticesOpt
   const options: SyncNoticesOptions = {
     sources: ["NOTICE", "UPDATE"],
     maxPages: 1,
-    pageSize: 18,
+    pageSize: PAGINATION.NOTICES_SYNC_DEFAULT_PAGE_SIZE,
     includePinned: true,
     ...partial
   };
