@@ -13,5 +13,5 @@
     "sourceMap": true,
     "noEmit": false
   },
-  "include": ["manifest.ts", "pages/**/*.tsx", "widgets/**/*.tsx"]
+  "include": ["manifest.ts", "lib/**/*.ts", "pages/**/*.tsx", "widgets/**/*.tsx"]
 }

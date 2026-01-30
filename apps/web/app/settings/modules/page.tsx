@@ -12,7 +12,7 @@ export default function SettingsModulesPage() {
 
   useEffect(() => {
     const saved = loadEnabledModuleIds();
-    if (saved.length > 0) setEnabled(new Set(saved));
+    if (saved !== null) setEnabled(new Set(saved));
   }, []);
 
   function toggle(id: string) {
@@ -27,7 +27,7 @@ export default function SettingsModulesPage() {
     <main>
       <h2>Modules</h2>
       <p style={{ marginTop: 0 }}>
-        모듈 토글은 로컬에 저장됩니다. (현재는 UI만 제공 — nav/라우팅 필터링은 다음 단계에서 적용)
+        모듈 토글은 로컬에 저장됩니다. (Sidebar/Dashboard/모듈 페이지 접근에 즉시 반영됩니다.)
       </p>
 
       <div style={{ display: "grid", gap: 10 }}>

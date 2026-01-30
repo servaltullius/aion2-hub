@@ -2,9 +2,10 @@
 
 import { getModules } from "@aion2/core";
 import Link from "next/link";
-import { Suspense, lazy, useMemo } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 
 import "../lib/moduleRegistry";
+import { loadEnabledModuleIds, subscribeEnabledModuleIds } from "../lib/moduleToggleStore";
 
 type Loaded = { default: unknown };
 
@@ -58,17 +59,29 @@ function WidgetCard({ widget }: { widget: WidgetRef }) {
 }
 
 export function DashboardWidgetGrid() {
-  const widgets: WidgetRef[] = getModules().flatMap((module) =>
-    module.widgets.map((widget) => ({
-      moduleId: module.id,
-      moduleName: module.name,
-      modulePermission: module.permission,
-      widgetId: widget.id,
-      title: widget.title,
-      load: widget.load,
-      ...(module.pages[0]?.href ? { href: module.pages[0].href } : {})
-    }))
+  const [enabledModuleIds, setEnabledModuleIds] = useState<string[] | null>(() =>
+    loadEnabledModuleIds()
   );
+
+  useEffect(() => {
+    const update = () => setEnabledModuleIds(loadEnabledModuleIds());
+    return subscribeEnabledModuleIds(update);
+  }, []);
+
+  const enabledSet = enabledModuleIds === null ? null : new Set(enabledModuleIds);
+  const widgets: WidgetRef[] = getModules()
+    .filter((module) => (enabledSet ? enabledSet.has(module.id) : true))
+    .flatMap((module) =>
+      module.widgets.map((widget) => ({
+        moduleId: module.id,
+        moduleName: module.name,
+        modulePermission: module.permission,
+        widgetId: widget.id,
+        title: widget.title,
+        load: widget.load,
+        ...(module.pages[0]?.href ? { href: module.pages[0].href } : {})
+      }))
+    );
 
   const visible = widgets.slice(0, 6);
 

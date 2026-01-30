@@ -1,4 +1,4 @@
-export type HubPermission = "public" | "user" | "discord-guild-admin";
+export type HubPermission = "public" | "user";
 
 export type HubNavItem = {
   title: string;

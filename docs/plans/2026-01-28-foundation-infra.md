@@ -4,9 +4,9 @@
 
 **Goal:** `pnpm -r build`가 통과하는 모노레포 뼈대(웹/ API/ 워커/ 디스코드봇 + core/db 패키지)와 최소 테스트/CI를 세팅한다.
 
-**Architecture:** TurboRepo 기반 모노레포. `apps/*`는 실행 앱(Next.js, Fastify, BullMQ worker, discord.js bot), `packages/*`는 공용 라이브러리(core, db)와 모듈 스캐폴딩(modules/*)을 둔다. DB/Redis는 로컬은 docker-compose, CI는 GitHub Actions services로 제공한다.
+**Architecture:** TurboRepo 기반 모노레포. `apps/*`는 실행 앱(Next.js, Fastify, BullMQ worker), `packages/*`는 공용 라이브러리(core, db)와 모듈 스캐폴딩(modules/*)을 둔다. DB/Redis는 로컬은 docker-compose, CI는 GitHub Actions services로 제공한다.
 
-**Tech Stack:** Node.js(>=22), pnpm, turbo, Next.js(App Router), Fastify, Prisma(Postgres), Redis + BullMQ, discord.js, TypeScript, Vitest, ESLint, Prettier, GitHub Actions.
+**Tech Stack:** Node.js(>=22), pnpm, turbo, Next.js(App Router), Fastify, Prisma(Postgres), Redis + BullMQ, TypeScript, Vitest, ESLint, Prettier, GitHub Actions.
 
 ---
 
@@ -67,7 +67,7 @@ Verify:
 
 **Steps**
 1. Postgres/Redis 서비스 + healthcheck
-2. `.env.example`에 `DATABASE_URL`, `REDIS_URL`, Discord 관련 환경변수 표기
+2. `.env.example`에 `DATABASE_URL`, `REDIS_URL` 등 환경변수 표기
 
 Verify (docker 환경에서):
 - `docker compose -f infra/docker-compose.yml up -d`
@@ -82,7 +82,7 @@ Verify (docker 환경에서):
 - Create: `packages/db/src/index.ts`
 
 **Steps**
-1. 최소 모델(User/Character/NoticeItem/Legion/Event 등)은 “빈 껍데기”라도 정의
+1. 최소 모델(NoticeItem 등)은 “빈 껍데기”라도 정의
 2. `prisma generate`가 DB 없이도 동작하게 스크립트 구성
 
 Verify:
@@ -126,25 +126,6 @@ Verify:
 
 ---
 
-### Task 7: `apps/bot-discord` skeleton (+ command deploy script)
-
-**Files**
-- Create: `apps/bot-discord/package.json`
-- Create: `apps/bot-discord/tsconfig.json`
-- Create: `apps/bot-discord/src/commands/ping.ts`
-- Create: `apps/bot-discord/src/deploy-commands.ts`
-- Create: `apps/bot-discord/src/index.ts`
-
-**Steps**
-1. `/ping` 커맨드 정의 + 응답 `Pong!`
-2. `deploy-commands.ts`로 guild command 등록(개발용)
-
-Verify (수동):
-- `pnpm --filter bot-discord dev`
-- `pnpm --filter bot-discord deploy:commands`
-
----
-
 ### Task 8: `.codex/` config + SAFE_BOUNDARIES 문서화
 
 **Files**
@@ -178,4 +159,3 @@ Verify (수동):
 1. 로컬 실행(설치/compose up/각 앱 dev)
 2. env 설명
 3. 금지 기능(SAFE_BOUNDARIES) 링크
-

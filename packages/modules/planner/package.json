@@ -18,7 +18,8 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@aion2/core": "workspace:*"
+    "@aion2/core": "workspace:*",
+    "dexie": "^4.2.1"
   },
   "peerDependencies": {
     "react": "^19.0.0",

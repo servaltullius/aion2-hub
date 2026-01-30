@@ -45,13 +45,11 @@
 **Files:**
 - Modify: `packages/modules/planner/manifest.ts`
 - Modify: `packages/modules/notices/manifest.ts`
-- Modify: `packages/modules/legion/manifest.ts`
 - Modify: `packages/modules/links/manifest.ts`
 
 **Step 1: pages/nav/widgets 최소 정의**
 - planner: page `today`, widget `today`
 - notices: page `feed`, widget `changes`
-- legion: page `overview`, widget `next-event` (permission은 유지)
 - links: page `official`, widget 0개(또는 1개)
 
 **Step 2: build 확인**
@@ -81,7 +79,7 @@
 
 **Step 1: AppShell 추가**
 - Sidebar: Dashboard/Characters/Settings + 모듈 nav(등록된 모듈 기준)
-- TopBar: Search/Char/Legion/User는 placeholder
+- TopBar: Search/Char는 placeholder
 
 **Step 2: 페이지 스켈레톤 추가**
 - Settings 하위 페이지 생성 (내용은 placeholder OK)
@@ -110,7 +108,7 @@
 
 **Step 2: 클라이언트 렌더러**
 - `ModulePageClient`(use client): resolver로 page 찾고 lazy load + fallback UI
-- permission(public/user/discord-guild-admin) 스텁 처리(현재는 안내 UI)
+- permission(public/user) 스텁 처리(현재는 안내 UI)
 
 **Step 3: build/test**
 - Run: `pnpm -r build`
@@ -199,4 +197,3 @@
 - Run: `pnpm -r typecheck`
 - Run: `pnpm -r test`
 - Run: `pnpm -r build`
-

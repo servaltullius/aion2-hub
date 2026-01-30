@@ -1,6 +1,6 @@
 # AION2 HUB
 
-안전한 올인원 동반자 허브(플래너 + 공지 diff + 레기온 운영) — **클라이언트 접근/자동화는 절대 하지 않습니다.**
+안전한 올인원 동반자 허브(플래너 + 공지 diff) — **클라이언트 접근/자동화는 절대 하지 않습니다.**
 
 ## Prereqs
 
@@ -19,6 +19,14 @@ pnpm --filter @aion2/db prisma:migrate
 pnpm --filter @aion2/db prisma:generate
 ```
 
+### Notices 초기 수집 (Feed/Diff)
+
+Web의 Notices Feed가 비어있으면 먼저 Worker sync를 한 번 실행하세요:
+
+```bash
+pnpm --filter worker notices:sync
+```
+
 ### Run apps
 
 ```bash
@@ -31,9 +39,6 @@ pnpm --filter api dev
 # Worker (BullMQ)
 pnpm --filter worker dev
 
-# Discord Bot
-pnpm --filter bot-discord deploy:commands
-pnpm --filter bot-discord dev
 ```
 
 ### Worker demo job enqueue
@@ -54,4 +59,3 @@ pnpm -r build
 ## Safety (필수)
 
 금지 영역(클라/패킷/후킹/자동입력/우회 등)은 `.codex/skills/SAFE_BOUNDARIES/README.md`를 참고하세요.
-

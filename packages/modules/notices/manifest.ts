@@ -13,6 +13,12 @@ export const manifest: HubModule = {
       title: "Feed",
       href: "/m/notices/feed",
       load: () => import("./pages/feed.js")
+    },
+    {
+      id: "diff",
+      title: "Diff",
+      href: "/m/notices/diff",
+      load: () => import("./pages/diff.js")
     }
   ],
   widgets: [
@@ -23,4 +29,3 @@ export const manifest: HubModule = {
     }
   ]
 };
-

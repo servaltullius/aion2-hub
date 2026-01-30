@@ -3,6 +3,13 @@ node_modules
 .next
 dist
 coverage
+release/
+
+# local scratch / build experiments
+tmp/
+tmp-*/
+tmp-portable*/
+tmp-portable-run*/
 
 .env
 .env.*.local
@@ -10,3 +17,15 @@ coverage
 .DS_Store
 .idea
 *.tsbuildinfo
+__pycache__/
+*.pyc
+
+# vibe-kit
+.vibe/db/
+.vibe/reports/
+.vibe/locks/
+.vibe/venv/
+.vibe/config.json.bak-*
+.vibe/context/*.md
+!.vibe/context/PROFILE_GUIDE.md
+.vibe/context/typecheck_baseline.json
