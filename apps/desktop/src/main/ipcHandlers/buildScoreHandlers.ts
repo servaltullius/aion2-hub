@@ -10,7 +10,7 @@ import { asRecord, resolveCharacterId } from "./util.js";
 function sanitizeFilePart(raw: string) {
   const safe = raw
     .trim()
-    .replaceAll(/[<>:"/\\|?*\u0000-\u001F]/g, "_")
+    .replaceAll(/[<>:"/\\|?*\p{Cc}]/gu, "_")
     .replaceAll(/\s+/g, " ")
     .trim();
   if (!safe) return "preset";
@@ -218,4 +218,3 @@ export function registerBuildScoreHandlers(deps: IpcDeps) {
     return { canceled: false, filePath, imported: created.length, created };
   });
 }
-

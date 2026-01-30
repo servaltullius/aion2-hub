@@ -14,7 +14,7 @@ import { startTimerWithConfirm } from "../planner/timer.js";
 import { PlannerChargesCard } from "./planner/today/PlannerChargesCard.js";
 import { PlannerTaskListCard } from "./planner/today/PlannerTaskListCard.js";
 import { PlannerTimerCard } from "./planner/today/PlannerTimerCard.js";
-import { asDurationStats, asOverview, estimateForBudget, formatDate, type PlannerOverview } from "./planner/today/model.js";
+import { asDurationStats, asOverview, formatDate, type PlannerOverview } from "./planner/today/model.js";
 
 type AppCharacter = {
   id: string;
@@ -116,7 +116,7 @@ export function PlannerTodayPage(props: { activeCharacterId: string | null; char
 
   const matchesQ = useMemo(() => {
     const q = taskQ.trim().toLowerCase();
-    if (!q) return (_title: string) => true;
+    if (!q) return (title: string) => title.length >= 0;
     return (title: string) => title.toLowerCase().includes(q);
   }, [taskQ]);
 
