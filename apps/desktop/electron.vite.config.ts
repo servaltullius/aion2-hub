@@ -9,7 +9,11 @@ const rootDir = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   main: {
     build: {
-      outDir: "dist/main"
+      outDir: "dist/main",
+      externalizeDeps: {
+        // Bundle workspace packages into dist to avoid pnpm symlink issues in packaged apps.
+        exclude: ["@aion2/constants", "@aion2/notices-client"]
+      }
     }
   },
   preload: {
