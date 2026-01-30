@@ -455,7 +455,31 @@ async function run() {
 
     registerIpcHandlers({
       getDb: () => db,
-      getScheduler: () => scheduler
+      getScheduler: () => scheduler,
+      toggleOverlay: async () => ({ enabled: false }),
+      showMainWindow: async (hash?: string | null) => {
+        if (mainWindow) {
+          if (mainWindow.isMinimized()) mainWindow.restore();
+          mainWindow.show();
+          mainWindow.focus();
+          if (hash) mainWindow.webContents.send("app:navigate", hash);
+          return;
+        }
+
+        const stored = db ? parseWindowState(db.getSetting(MAIN_WINDOW_STATE_KEY)) : null;
+        const initial = stored ?? defaultWindowState();
+        const next = await createWindow(initial);
+        if (stored) applyWindowState(next, stored);
+        await loadRenderer(next);
+
+        if (hash) {
+          if (next.webContents.isLoading()) {
+            next.webContents.once("did-finish-load", () => next.webContents.send("app:navigate", hash));
+          } else {
+            next.webContents.send("app:navigate", hash);
+          }
+        }
+      }
     });
     log.info("ipc handlers registered");
 

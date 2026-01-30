@@ -51,7 +51,14 @@ export function OverlayPage(props: {
           <Button size="sm" variant="outline" disabled title="다음 작업에서 연결합니다.">
             Hide
           </Button>
-          <Button size="sm" variant="outline" disabled title="다음 작업에서 연결합니다.">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={async () => {
+              const hash = props.tab === "loot" ? "#/m/loot/logbook" : "#/m/planner/today";
+              await window.aion2Hub.app.showMainWindow({ hash });
+            }}
+          >
             Open Main
           </Button>
         </div>
@@ -98,4 +105,3 @@ export function OverlayPage(props: {
     </div>
   );
 }
-

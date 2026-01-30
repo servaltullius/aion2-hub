@@ -67,8 +67,8 @@ function asCharacters(value: unknown): AppCharacter[] | null {
 }
 
 export function App() {
-  const api = (window as unknown as { aion2Hub?: Window["aion2Hub"] }).aion2Hub;
-  if (!api) {
+  const apiMaybe = (window as unknown as { aion2Hub?: Window["aion2Hub"] }).aion2Hub;
+  if (!apiMaybe) {
     return (
       <div className="min-h-screen bg-background p-6 text-foreground">
         <h1 className="mb-2 text-lg font-semibold tracking-tight">AION2 HUB</h1>
@@ -78,6 +78,7 @@ export function App() {
       </div>
     );
   }
+  const api = apiMaybe;
 
   const [route, setRoute] = useState<Route>(() => parseRoute(window.location.hash));
   const [status, setStatus] = useState<SchedulerStatus | null>(null);
@@ -91,6 +92,14 @@ export function App() {
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
+
+  useEffect(() => {
+    const off = api.app.onNavigate((nextHash) => {
+      const normalized = nextHash.startsWith("#") ? nextHash : `#${nextHash}`;
+      if (window.location.hash !== normalized) window.location.hash = normalized;
+    });
+    return () => off();
+  }, [api]);
 
   const refreshStatus = useMemo(
     () => async () => {

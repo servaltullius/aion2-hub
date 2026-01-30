@@ -8,6 +8,9 @@ declare global {
       app: {
         getActiveCharacterId: () => Promise<string | null>;
         setActiveCharacterId: (characterId: string | null) => Promise<string | null>;
+        toggleOverlay: () => Promise<{ enabled: boolean }>;
+        showMainWindow: (input?: { hash?: string | null } | null) => Promise<{ ok: true }>;
+        onNavigate: (cb: (hash: string) => void) => () => void;
       };
       characters: {
         list: () => Promise<unknown>;
