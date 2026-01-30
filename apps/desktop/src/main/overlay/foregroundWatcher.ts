@@ -50,12 +50,12 @@ while ($true) {
     $sb = New-Object System.Text.StringBuilder 1024;
     [void][Win32]::GetWindowText($hwnd, $sb, $sb.Capacity);
     $title = $sb.ToString();
-    $title = $title -replace \"\\t\", \" \" -replace \"\\r\", \" \" -replace \"\\n\", \" \";
+    $title = $title -replace "\\t", " " -replace "\\r", " " -replace "\\n", " ";
     $pid = 0;
     [void][Win32]::GetWindowThreadProcessId($hwnd, [ref]$pid);
-    $pname = \"\";
+    $pname = "";
     try { $pname = (Get-Process -Id $pid -ErrorAction SilentlyContinue).ProcessName } catch {}
-    $out = \"$pid\\t$title\\t$pname\";
+    $out = "$pid\\t$title\\t$pname";
     if ($out -ne $last) {
       $last = $out;
       Write-Output $out;
