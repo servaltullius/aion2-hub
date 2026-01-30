@@ -1,4 +1,4 @@
-import { BrowserWindow, app, dialog, shell } from "electron";
+import { BrowserWindow, app, dialog, screen, shell } from "electron";
 import { appendFile, mkdir, readdir, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -26,6 +26,8 @@ let log: Logger = {
 };
 let logPaths: { attempted: string[]; writable: string[] } = { attempted: [], writable: [] };
 let mainWindow: BrowserWindow | null = null;
+const MAIN_WINDOW_STATE_KEY = "mainWindowState";
+let savingWindowState = false;
 
 function resolveBaseDirEarly() {
   const portableDir = process.env.PORTABLE_EXECUTABLE_DIR?.trim();
@@ -165,10 +167,87 @@ function errorHtml(title: string, details: unknown) {
 </html>`;
 }
 
-async function createWindow() {
+type WindowBounds = { x: number; y: number; width: number; height: number };
+type WindowState = { bounds: WindowBounds; isMaximized: boolean };
+
+function defaultWindowState(): WindowState {
+  const point = screen.getCursorScreenPoint();
+  const display = screen.getDisplayNearestPoint(point);
+  const area = display.workArea;
+  const width = Math.max(800, Math.floor(area.width * 0.8));
+  const height = Math.max(600, Math.floor(area.height * 0.8));
+  const x = area.x + Math.floor((area.width - width) / 2);
+  const y = area.y + Math.floor((area.height - height) / 2);
+  return { bounds: { x, y, width, height }, isMaximized: false };
+}
+
+function parseWindowState(raw: string | null): WindowState | null {
+  if (!raw) return null;
+  try {
+    const obj = JSON.parse(raw) as unknown;
+    if (!obj || typeof obj !== "object") return null;
+    const state = obj as Partial<WindowState> & { bounds?: Partial<WindowBounds> };
+    const bounds = state.bounds;
+    if (!bounds) return null;
+    const x = typeof bounds.x === "number" && Number.isFinite(bounds.x) ? Math.floor(bounds.x) : null;
+    const y = typeof bounds.y === "number" && Number.isFinite(bounds.y) ? Math.floor(bounds.y) : null;
+    const width = typeof bounds.width === "number" && Number.isFinite(bounds.width) ? Math.floor(bounds.width) : null;
+    const height = typeof bounds.height === "number" && Number.isFinite(bounds.height) ? Math.floor(bounds.height) : null;
+    if (x === null || y === null || width === null || height === null) return null;
+    if (width < 300 || height < 200) return null;
+    const isMaximized = Boolean(state.isMaximized);
+    return { bounds: { x, y, width, height }, isMaximized };
+  } catch {
+    return null;
+  }
+}
+
+function clampBoundsToDisplay(bounds: WindowBounds): WindowBounds {
+  const display = screen.getDisplayMatching(bounds);
+  const area = display.workArea;
+
+  const width = Math.min(Math.max(bounds.width, 300), area.width);
+  const height = Math.min(Math.max(bounds.height, 200), area.height);
+
+  let x = bounds.x;
+  let y = bounds.y;
+
+  if (x < area.x) x = area.x;
+  if (y < area.y) y = area.y;
+  if (x + width > area.x + area.width) x = area.x + area.width - width;
+  if (y + height > area.y + area.height) y = area.y + area.height - height;
+
+  return { x, y, width, height };
+}
+
+function computeWindowState(win: BrowserWindow): WindowState {
+  const isMaximized = win.isMaximized();
+  const bounds = isMaximized ? win.getNormalBounds() : win.getBounds();
+  return {
+    bounds: { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height },
+    isMaximized
+  };
+}
+
+async function persistWindowState(win: BrowserWindow) {
+  if (!db) return;
+  const state = computeWindowState(win);
+  db.setSetting(MAIN_WINDOW_STATE_KEY, JSON.stringify(state));
+  await db.persist();
+}
+
+function applyWindowState(win: BrowserWindow, state: WindowState) {
+  const bounds = clampBoundsToDisplay(state.bounds);
+  win.setBounds(bounds);
+  if (state.isMaximized) win.maximize();
+}
+
+async function createWindow(initial: WindowState) {
   const win = new BrowserWindow({
-    width: 1100,
-    height: 800,
+    x: initial.bounds.x,
+    y: initial.bounds.y,
+    width: initial.bounds.width,
+    height: initial.bounds.height,
     show: true,
     webPreferences: {
       preload: path.join(__dirname, "../preload/index.cjs")
@@ -183,6 +262,22 @@ async function createWindow() {
 
   win.on("closed", () => {
     if (mainWindow === win) mainWindow = null;
+  });
+
+  win.on("close", (event) => {
+    if (savingWindowState) return;
+    if (!db) return;
+    savingWindowState = true;
+    event.preventDefault();
+    void (async () => {
+      try {
+        await persistWindowState(win);
+      } catch (e: unknown) {
+        log.error("persistWindowState failed", { err: e instanceof Error ? e.message : String(e) });
+      } finally {
+        win.destroy();
+      }
+    })();
   });
 
   win.webContents.on("did-fail-load", (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
@@ -330,7 +425,7 @@ async function run() {
     });
 
     log.info("creating window (splash)");
-    const win = await createWindow();
+    const win = await createWindow(defaultWindowState());
     log.info("splash window created");
 
     const dataDir = await resolvePortableDataDir().catch((e: unknown) => {
@@ -349,6 +444,12 @@ async function run() {
 
     db = await openDesktopDb(dataDir);
     log.info("db opened", { filePath: db.filePath });
+
+    const storedState = parseWindowState(db.getSetting(MAIN_WINDOW_STATE_KEY));
+    if (storedState) {
+      applyWindowState(win, storedState);
+    }
+
     scheduler = startNoticesScheduler(db);
     log.info("scheduler started");
 
@@ -365,7 +466,10 @@ async function run() {
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length !== 0) return;
       void (async () => {
-        const next = await createWindow();
+        const stored = db ? parseWindowState(db.getSetting(MAIN_WINDOW_STATE_KEY)) : null;
+        const initial = stored ?? defaultWindowState();
+        const next = await createWindow(initial);
+        if (stored) applyWindowState(next, stored);
         await loadRenderer(next);
       })();
     });
@@ -374,7 +478,23 @@ async function run() {
       app.quit();
     });
 
-    app.on("before-quit", () => {
+    app.on("before-quit", (event) => {
+      if (savingWindowState) return;
+      if (!db || !mainWindow) return;
+      savingWindowState = true;
+      event.preventDefault();
+      void (async () => {
+        try {
+          await persistWindowState(mainWindow);
+        } catch (e: unknown) {
+          log.error("persistWindowState failed (before-quit)", { err: e instanceof Error ? e.message : String(e) });
+        } finally {
+          app.quit();
+        }
+      })();
+    });
+
+    app.on("will-quit", () => {
       scheduler?.stop();
       scheduler = null;
       db?.db.close();
